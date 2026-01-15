@@ -6,6 +6,13 @@ import { getSession } from "@/lib/auth/session";
 import { QueryProvider } from "@/providers/query-provider";
 import { SessionProvider } from "@/providers/session-provider";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { logout } from "@/actions/auth/logout";
 import { User, KeyRound, Grid3X3, LogOut } from "lucide-react";
 import { eq } from "drizzle-orm";
@@ -62,22 +69,37 @@ export default async function AccountLayout({
                 {process.env.NEXT_PUBLIC_APP_NAME || "RxLab Auth"}
               </Link>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <img
-                    src={`/api/avatar/${user.avatarSeed || user.id}`}
-                    alt="Avatar"
-                    className="w-8 h-8 rounded-full"
-                  />
-                  <span className="text-sm font-medium hidden sm:block">
-                    {user.displayName || user.email}
-                  </span>
-                </div>
-                <form action={logout}>
-                  <Button type="submit" variant="ghost" size="sm">
-                    <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline">Sign out</span>
-                  </Button>
-                </form>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                    <img
+                      src={`/api/avatar/${user.avatarSeed || user.id}`}
+                      alt="Avatar"
+                      className="w-8 h-8 rounded-full cursor-pointer"
+                    />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-72">
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium leading-none">
+                        {user.displayName || user.username || "User"}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground mt-1">
+                        {user.email}
+                      </p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <form action={logout} className="w-full">
+                        <button
+                          type="submit"
+                          className="flex w-full items-center gap-2"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign out
+                        </button>
+                      </form>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </header>
@@ -89,10 +111,7 @@ export default async function AccountLayout({
                   const Icon = item.icon;
                   return (
                     <Link key={item.href} href={item.href}>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start"
-                      >
+                      <Button variant="ghost" className="w-full justify-start">
                         <Icon className="w-4 h-4" />
                         {item.label}
                       </Button>

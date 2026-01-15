@@ -52,25 +52,19 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
     const avatarSeed = generateAvatarSeed();
     const now = new Date();
 
-    // Create user
-    await db.insert(users).values({
-      id: userId,
-      email: email.toLowerCase(),
-      passwordHash,
-      displayName: displayName || email.split("@")[0],
-      avatarSeed,
-      emailVerified: false,
-      createdAt: now,
-      updatedAt: now,
-    });
-
     // Skip email verification in E2E test environment
     if (process.env.E2E_SKIP_EMAIL_VERIFICATION === "true") {
-      // Mark email as verified immediately
-      await db
-        .update(users)
-        .set({ emailVerified: true, updatedAt: new Date() })
-        .where(eq(users.id, userId));
+      // Create user with email already verified
+      await db.insert(users).values({
+        id: userId,
+        email: email.toLowerCase(),
+        passwordHash,
+        displayName: displayName || email.split("@")[0],
+        avatarSeed,
+        emailVerified: true,
+        createdAt: now,
+        updatedAt: now,
+      });
 
       // Create session
       await createSession(userId, email.toLowerCase());
@@ -83,20 +77,37 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
     const tokenId = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    await db.insert(emailVerificationTokens).values({
-      id: tokenId,
-      userId,
-      token,
-      expiresAt,
-      createdAt: now,
-    });
+    // Wrap user creation, token creation, and email sending in a transaction
+    // If email fails to send, the transaction will rollback and no user will be created
+    await db.transaction(async (tx) => {
+      // Create user
+      await tx.insert(users).values({
+        id: userId,
+        email: email.toLowerCase(),
+        passwordHash,
+        displayName: displayName || email.split("@")[0],
+        avatarSeed,
+        emailVerified: false,
+        createdAt: now,
+        updatedAt: now,
+      });
 
-    // Send verification email
-    await sendEmail({
-      to: email,
-      subject: "Verify your email address",
-      html: getVerificationEmailHtml(token),
-      text: getVerificationEmailText(token),
+      // Create verification token
+      await tx.insert(emailVerificationTokens).values({
+        id: tokenId,
+        userId,
+        token,
+        expiresAt,
+        createdAt: now,
+      });
+
+      // Send verification email - if this throws, the transaction rolls back
+      await sendEmail({
+        to: email,
+        subject: "Verify your email address",
+        html: getVerificationEmailHtml(token),
+        text: getVerificationEmailText(token),
+      });
     });
 
     return { success: true };

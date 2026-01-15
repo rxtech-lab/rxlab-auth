@@ -91,8 +91,9 @@ export function usePasskey(options: UsePasskeyOptions = {}) {
           throw new Error(data.error || "Failed to get authentication options");
         }
 
-        const authenticationOptions: PublicKeyCredentialRequestOptionsJSON =
-          await optionsResponse.json();
+        const optionsData = await optionsResponse.json();
+        const { sessionId, ...authenticationOptions } =
+          optionsData as PublicKeyCredentialRequestOptionsJSON & { sessionId: string };
 
         // Start authentication with browser
         const credential = await startAuthentication({ optionsJSON: authenticationOptions });
@@ -103,7 +104,7 @@ export function usePasskey(options: UsePasskeyOptions = {}) {
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, credential }),
+            body: JSON.stringify({ credential, sessionId }),
           }
         );
 
