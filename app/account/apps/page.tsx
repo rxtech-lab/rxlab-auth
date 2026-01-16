@@ -3,13 +3,8 @@ import { db } from "@/lib/db";
 import { oauthConsents, oauthClients } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { ConnectedAppCard } from "@/components/account/connected-app-card";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { PageHeader } from "@/components/dashboard";
+import { Card, CardContent } from "@/components/ui/card";
 import { eq } from "drizzle-orm";
 
 export const metadata = {
@@ -29,7 +24,6 @@ export default async function ConnectedAppsPage() {
     orderBy: (oauthConsents, { desc }) => [desc(oauthConsents.createdAt)],
   });
 
-  // Fetch client info for each consent
   const consentsWithClients = await Promise.all(
     consents.map(async (consent) => {
       const client = await db.query.oauthClients.findFirst({
@@ -55,29 +49,30 @@ export default async function ConnectedAppsPage() {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Connected Apps</CardTitle>
-        <CardDescription>
-          Applications that have access to your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {consentsWithClients.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No connected applications.</p>
-            <p className="text-sm">
-              When you authorize applications, they will appear here.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {consentsWithClients.map((consent) => (
-              <ConnectedAppCard key={consent.id} consent={consent} />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <PageHeader
+        title="Connected Apps"
+        description="Applications that have access to your account"
+      />
+
+      <Card>
+        <CardContent className="pt-6">
+          {consentsWithClients.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No connected applications.</p>
+              <p className="text-sm">
+                When you authorize applications, they will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {consentsWithClients.map((consent) => (
+                <ConnectedAppCard key={consent.id} consent={consent} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

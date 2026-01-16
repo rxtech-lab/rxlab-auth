@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import Image from "next/image";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { QueryProvider } from "@/providers/query-provider";
 import { SessionProvider } from "@/providers/session-provider";
-import { Button } from "@/components/ui/button";
+import { DashboardShell, type NavItem } from "@/components/dashboard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,13 +14,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/actions/auth/logout";
-import { User, KeyRound, Grid3X3, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { eq } from "drizzle-orm";
 
-const navItems = [
-  { href: "/account", label: "Profile", icon: User },
-  { href: "/account/passkeys", label: "Passkeys", icon: KeyRound },
-  { href: "/account/apps", label: "Connected Apps", icon: Grid3X3 },
+const navItems: NavItem[] = [
+  { href: "/account", label: "Profile", iconName: "User" },
+  { href: "/account/passkeys", label: "Passkeys", iconName: "KeyRound" },
+  { href: "/account/apps", label: "Connected Apps", iconName: "AppWindow" },
 ];
 
 export default async function AccountLayout({
@@ -50,6 +50,40 @@ export default async function AccountLayout({
     redirect("/login");
   }
 
+  const headerRight = (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+        <Image
+          src={`/api/avatar/${user.avatarSeed || user.id}`}
+          alt="Avatar"
+          width={32}
+          height={32}
+          className="rounded-full cursor-pointer"
+          unoptimized
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="px-2 py-1.5">
+          <p className="text-sm font-medium leading-none">
+            {user.displayName || user.username || "User"}
+          </p>
+          <p className="text-xs leading-none text-muted-foreground mt-1">
+            {user.email}
+          </p>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>
+          <form action={logout} className="w-full">
+            <button type="submit" className="flex w-full items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          </form>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <QueryProvider>
       <SessionProvider
@@ -62,67 +96,14 @@ export default async function AccountLayout({
           emailVerified: user.emailVerified ?? false,
         }}
       >
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
-          <header className="border-b">
-            <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-              <Link href="/account" className="font-bold text-lg">
-                {process.env.NEXT_PUBLIC_APP_NAME || "RxLab Auth"}
-              </Link>
-              <div className="flex items-center gap-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                    <img
-                      src={`/api/avatar/${user.avatarSeed || user.id}`}
-                      alt="Avatar"
-                      className="w-8 h-8 rounded-full cursor-pointer"
-                    />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-72">
-                    <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium leading-none">
-                        {user.displayName || user.username || "User"}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground mt-1">
-                        {user.email}
-                      </p>
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <form action={logout} className="w-full">
-                        <button
-                          type="submit"
-                          className="flex w-full items-center gap-2"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Sign out
-                        </button>
-                      </form>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </header>
-
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex flex-col md:flex-row gap-8">
-              <aside className="w-full md:w-64 space-y-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link key={item.href} href={item.href}>
-                      <Button variant="ghost" className="w-full justify-start">
-                        <Icon className="w-4 h-4" />
-                        {item.label}
-                      </Button>
-                    </Link>
-                  );
-                })}
-              </aside>
-              <main className="flex-1 max-w-2xl">{children}</main>
-            </div>
-          </div>
-        </div>
+        <DashboardShell
+          title={process.env.NEXT_PUBLIC_APP_NAME || "RxLab Auth"}
+          navItems={navItems}
+          headerRight={headerRight}
+          homeHref="/account"
+        >
+          {children}
+        </DashboardShell>
       </SessionProvider>
     </QueryProvider>
   );
