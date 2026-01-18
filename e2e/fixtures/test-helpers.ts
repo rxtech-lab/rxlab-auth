@@ -55,28 +55,29 @@ export async function createOAuthClient(
 ) {
   await page.goto("/admin/dashboard/clients/new");
 
-  await page.getByLabel("Application Name").fill(options.name);
-  await page.getByPlaceholder("https://example.com/callback").fill(options.redirectUri);
+  await page.getByTestId("client-name").fill(options.name);
+  await page.getByTestId("redirect-uri-0").fill(options.redirectUri);
 
-  // Select additional scopes if provided
+  // Select additional scopes if provided using data-testid
+  // Scopes can be resource names (profile, email) or scope keys (read:profile, write:profile, read:email)
   if (options.scopes) {
     for (const scope of options.scopes) {
       if (scope !== "openid") {
-        await page.getByRole("button", { name: scope }).click();
+        await page.getByTestId(scope).click();
       }
     }
   }
 
-  await page.getByRole("button", { name: "Create Application" }).click();
+  await page.getByTestId("submit-button").click();
 
   // Wait for credentials to be shown
   await expect(page.getByText("Client Created Successfully")).toBeVisible();
 
-  // Extract credentials
-  const clientId = await page.locator('input[readonly]').first().inputValue();
-  const clientSecret = await page.locator('input[readonly]').nth(1).inputValue();
+  // Extract credentials using data-testid
+  const clientId = await page.getByTestId("client-id-display").inputValue();
+  const clientSecret = await page.getByTestId("client-secret-display").inputValue();
 
-  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByTestId("done-button").click();
 
   return { clientId, clientSecret };
 }

@@ -3,10 +3,11 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Loader2, CheckCircle, Shield, User, Mail, Key } from "lucide-react";
+import { Loader2, CheckCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { approveConsent, denyConsent, type ConsentParams } from "@/actions/oauth/consent";
+import { getScope } from "@/lib/scopes";
 
 interface OAuthConsentCardProps {
   client: {
@@ -18,29 +19,6 @@ interface OAuthConsentCardProps {
   scopes: string[];
   params: ConsentParams;
 }
-
-const SCOPE_INFO: Record<string, { icon: React.ElementType; label: string; description: string }> = {
-  openid: {
-    icon: Key,
-    label: "OpenID",
-    description: "Verify your identity",
-  },
-  profile: {
-    icon: User,
-    label: "Profile",
-    description: "Access your name and profile picture",
-  },
-  email: {
-    icon: Mail,
-    label: "Email",
-    description: "View your email address",
-  },
-  offline_access: {
-    icon: Shield,
-    label: "Offline Access",
-    description: "Maintain access when you're not using the app",
-  },
-};
 
 export function OAuthConsentCard({ client, scopes, params }: OAuthConsentCardProps) {
   const router = useRouter();
@@ -114,9 +92,9 @@ export function OAuthConsentCard({ client, scopes, params }: OAuthConsentCardPro
             <p className="text-sm font-medium">This will allow {client.name} to:</p>
             <ul className="space-y-2">
               {scopes.map((scope) => {
-                const info = SCOPE_INFO[scope];
-                if (!info) return null;
-                const Icon = info.icon;
+                const scopeInfo = getScope(scope);
+                if (!scopeInfo) return null;
+                const Icon = scopeInfo.icon;
                 return (
                   <motion.li
                     key={scope}
@@ -126,9 +104,9 @@ export function OAuthConsentCard({ client, scopes, params }: OAuthConsentCardPro
                   >
                     <Icon className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium">{info.label}</p>
+                      <p className="text-sm font-medium">{scopeInfo.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {info.description}
+                        {scopeInfo.subtitle}
                       </p>
                     </div>
                   </motion.li>

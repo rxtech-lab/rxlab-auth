@@ -10,7 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createOAuthClient } from "@/actions/admin/clients/create";
 import { updateOAuthClient } from "@/actions/admin/clients/update";
-import { SUPPORTED_SCOPES } from "@/lib/validations/oauth";
+import {
+  SCOPE_RESOURCES,
+  SPECIAL_SCOPES,
+  OPERATIONS,
+  getScopesByResource,
+} from "@/lib/scopes";
 
 interface ClientFormProps {
   client?: {
@@ -65,6 +70,34 @@ export function ClientForm({ client }: ClientFormProps) {
     } else {
       setAllowedScopes([...allowedScopes, scope]);
     }
+  };
+
+  const handleResourceToggle = (resourceKey: string) => {
+    const resourceScopes = getScopesByResource(resourceKey);
+    const scopeKeys = resourceScopes.map((s) => s.key);
+    const allSelected = scopeKeys.every((key) => allowedScopes.includes(key));
+
+    if (allSelected) {
+      // Deselect all scopes for this resource
+      setAllowedScopes(allowedScopes.filter((s) => !scopeKeys.includes(s)));
+    } else {
+      // Select all scopes for this resource
+      const newScopes = new Set([...allowedScopes, ...scopeKeys]);
+      setAllowedScopes(Array.from(newScopes));
+    }
+  };
+
+  const isResourceFullySelected = (resourceKey: string) => {
+    const resourceScopes = getScopesByResource(resourceKey);
+    return resourceScopes.every((s) => allowedScopes.includes(s.key));
+  };
+
+  const isResourcePartiallySelected = (resourceKey: string) => {
+    const resourceScopes = getScopesByResource(resourceKey);
+    const selectedCount = resourceScopes.filter((s) =>
+      allowedScopes.includes(s.key)
+    ).length;
+    return selectedCount > 0 && selectedCount < resourceScopes.length;
   };
 
   const handleCopy = (text: string, type: string) => {
@@ -137,7 +170,7 @@ export function ClientForm({ client }: ClientFormProps) {
           <div className="space-y-2">
             <Label>Client ID</Label>
             <div className="flex gap-2">
-              <Input value={credentials.clientId} readOnly className="font-mono" />
+              <Input data-testid="client-id-display" value={credentials.clientId} readOnly className="font-mono" />
               <Button
                 type="button"
                 variant="outline"
@@ -157,6 +190,7 @@ export function ClientForm({ client }: ClientFormProps) {
             <Label>Client Secret</Label>
             <div className="flex gap-2">
               <Input
+                data-testid="client-secret-display"
                 value={credentials.clientSecret}
                 readOnly
                 className="font-mono"
@@ -177,7 +211,7 @@ export function ClientForm({ client }: ClientFormProps) {
           </div>
         </div>
 
-        <Button onClick={() => router.push("/admin/dashboard/clients")}>
+        <Button data-testid="done-button" onClick={() => router.push("/admin/dashboard/clients")}>
           Done
         </Button>
       </motion.div>
@@ -200,6 +234,7 @@ export function ClientForm({ client }: ClientFormProps) {
         <Label htmlFor="name">Application Name *</Label>
         <Input
           id="name"
+          data-testid="client-name"
           placeholder="My Application"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -212,6 +247,7 @@ export function ClientForm({ client }: ClientFormProps) {
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
+          data-testid="client-description"
           placeholder="A brief description of your application"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -228,6 +264,7 @@ export function ClientForm({ client }: ClientFormProps) {
           {redirectUris.map((uri, index) => (
             <div key={index} className="flex gap-2">
               <Input
+                data-testid={`redirect-uri-${index}`}
                 placeholder="https://example.com/callback"
                 value={uri}
                 onChange={(e) => handleRedirectUriChange(index, e.target.value)}
@@ -238,6 +275,7 @@ export function ClientForm({ client }: ClientFormProps) {
                   type="button"
                   variant="ghost"
                   size="icon"
+                  data-testid={`remove-redirect-uri-${index}`}
                   onClick={() => handleRemoveRedirectUri(index)}
                   disabled={isPending}
                 >
@@ -250,6 +288,7 @@ export function ClientForm({ client }: ClientFormProps) {
             type="button"
             variant="outline"
             size="sm"
+            data-testid="add-redirect-uri"
             onClick={handleAddRedirectUri}
             disabled={isPending}
           >
@@ -264,19 +303,124 @@ export function ClientForm({ client }: ClientFormProps) {
         <p className="text-xs text-muted-foreground">
           Scopes this application can request
         </p>
-        <div className="flex flex-wrap gap-2">
-          {SUPPORTED_SCOPES.map((scope) => (
-            <Button
-              key={scope}
-              type="button"
-              variant={allowedScopes.includes(scope) ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleScopeToggle(scope)}
-              disabled={isPending || scope === "openid"}
-            >
-              {scope}
-            </Button>
-          ))}
+        <div className="space-y-3">
+          {/* Special Scopes (openid, offline_access) */}
+          {SPECIAL_SCOPES.map((scope) => {
+            const isSelected = allowedScopes.includes(scope.key);
+            const isRequired = scope.required;
+            return (
+              <button
+                key={scope.key}
+                data-testid={scope.key}
+                type="button"
+                onClick={() => handleScopeToggle(scope.key)}
+                disabled={isPending || isRequired}
+                className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                  isSelected
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50"
+                } ${isPending || isRequired ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                <scope.icon className="w-5 h-5 mt-0.5 text-muted-foreground" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{scope.title}</span>
+                    {isRequired && (
+                      <span className="text-xs text-muted-foreground">(Required)</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{scope.subtitle}</p>
+                </div>
+                <div
+                  className={`w-4 h-4 rounded border flex items-center justify-center ${
+                    isSelected ? "bg-primary border-primary" : "border-border"
+                  }`}
+                >
+                  {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                </div>
+              </button>
+            );
+          })}
+
+          {/* Resource Scopes (grouped by resource) */}
+          {SCOPE_RESOURCES.map((resource) => {
+            const resourceScopes = getScopesByResource(resource.key);
+            const isFullySelected = isResourceFullySelected(resource.key);
+            const isPartiallySelected = isResourcePartiallySelected(resource.key);
+
+            return (
+              <div key={resource.key} className="rounded-lg border border-border">
+                {/* Resource Header */}
+                <button
+                  data-testid={resource.key}
+                  type="button"
+                  onClick={() => handleResourceToggle(resource.key)}
+                  disabled={isPending}
+                  className={`w-full flex items-start gap-3 p-3 text-left transition-colors rounded-t-lg ${
+                    isFullySelected || isPartiallySelected
+                      ? "bg-primary/5"
+                      : "hover:bg-muted/50"
+                  } ${isPending ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  <resource.icon className="w-5 h-5 mt-0.5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <span className="text-sm font-medium">{resource.title}</span>
+                    <p className="text-xs text-muted-foreground">{resource.subtitle}</p>
+                  </div>
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center ${
+                      isFullySelected
+                        ? "bg-primary border-primary"
+                        : isPartiallySelected
+                          ? "bg-primary/50 border-primary"
+                          : "border-border"
+                    }`}
+                  >
+                    {(isFullySelected || isPartiallySelected) && (
+                      <Check className="w-3 h-3 text-primary-foreground" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Operation Checkboxes */}
+                <div className="border-t border-border bg-muted/30 rounded-b-lg">
+                  {resourceScopes.map((scope) => {
+                    const isSelected = allowedScopes.includes(scope.key);
+                    const op = OPERATIONS[scope.operation!];
+                    const OpIcon = op.icon;
+
+                    return (
+                      <button
+                        key={scope.key}
+                        data-testid={scope.key}
+                        type="button"
+                        onClick={() => handleScopeToggle(scope.key)}
+                        disabled={isPending}
+                        className={`w-full flex items-center gap-3 px-3 py-2 pl-11 text-left transition-colors last:rounded-b-lg ${
+                          isSelected ? "bg-primary/5" : "hover:bg-muted/50"
+                        } ${isPending ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        <OpIcon className="w-4 h-4 text-muted-foreground" />
+                        <div className="flex-1">
+                          <span className="text-sm">{op.title}</span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {scope.subtitle}
+                          </span>
+                        </div>
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center ${
+                            isSelected ? "bg-primary border-primary" : "border-border"
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -284,6 +428,7 @@ export function ClientForm({ client }: ClientFormProps) {
         <input
           type="checkbox"
           id="isFirstParty"
+          data-testid="first-party-checkbox"
           checked={isFirstParty}
           onChange={(e) => setIsFirstParty(e.target.checked)}
           disabled={isPending}
@@ -298,12 +443,13 @@ export function ClientForm({ client }: ClientFormProps) {
         <Button
           type="button"
           variant="outline"
+          data-testid="cancel-button"
           onClick={() => router.back()}
           disabled={isPending}
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" data-testid="submit-button" disabled={isPending}>
           {isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" />

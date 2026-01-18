@@ -42,8 +42,8 @@ test.describe("OAuth Consent Flow", () => {
     await page.getByPlaceholder("https://example.com/callback").fill("http://localhost:3001/callback");
 
     // Enable profile and email scopes
-    await page.getByRole("button", { name: "profile" }).click();
-    await page.getByRole("button", { name: "email" }).click();
+    await page.getByTestId('profile').click();
+    await page.getByTestId('email').click();
 
     await page.getByRole("button", { name: "Create Application" }).click();
     await expect(page.getByText("Client Created Successfully")).toBeVisible();

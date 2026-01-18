@@ -10,6 +10,27 @@ bun build    # Production build
 bun lint     # Run ESLint
 ```
 
+## Testing
+
+### Unit Tests
+```bash
+bun test     # Run unit tests
+```
+
+### E2E Tests
+```bash
+bunx playwright test              # Run all E2E tests
+bunx playwright test --ui         # Interactive UI mode
+bunx playwright test e2e/admin    # Run admin tests only
+bunx playwright test --debug      # Debug mode
+```
+
+### Testing Patterns
+- E2E tests are in `e2e/` directory using Playwright
+- Use `data-testid` attributes for reliable element selection
+- Test helpers are in `e2e/fixtures/test-helpers.ts`
+- Tests verify DB state by navigating to edit pages after creation
+
 ## Architecture
 
 This is a Next.js 16 authentication app using the App Router with React 19.
