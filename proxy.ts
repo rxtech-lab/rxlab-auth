@@ -21,7 +21,7 @@ const adminRoutes = ["/admin/dashboard"];
 // Routes that should redirect to account if already logged in
 const authRoutes = ["/login", "/register"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Security headers
