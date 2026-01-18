@@ -1,13 +1,7 @@
 import { z } from "zod";
+import { SUPPORTED_SCOPES, type SupportedScope } from "@/lib/scopes";
 
-export const SUPPORTED_SCOPES = [
-  "openid",
-  "profile",
-  "email",
-  "offline_access",
-] as const;
-
-export type SupportedScope = (typeof SUPPORTED_SCOPES)[number];
+export { SUPPORTED_SCOPES, type SupportedScope };
 
 export const authorizeRequestSchema = z.object({
   client_id: z.string().min(1, "client_id is required"),

@@ -77,45 +77,45 @@ export default defineConfig({
       command: "bun run dev",
       url: "http://localhost:3000",
       timeout: 30 * 1000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       env: {
-      // Testing flags (both server and client side)
-      E2E_SKIP_EMAIL_VERIFICATION: "true",
-      NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION: "true",
+        // Testing flags (both server and client side)
+        E2E_SKIP_EMAIL_VERIFICATION: "true",
+        NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION: "true",
 
-      // Database (in-memory SQLite for E2E tests)
-      TURSO_DATABASE_URL: "file::memory:",
-      TURSO_AUTH_TOKEN: "",
+        // Database (in-memory SQLite for E2E tests)
+        TURSO_DATABASE_URL: "file::memory:",
+        TURSO_AUTH_TOKEN: "",
 
-      // Session
-      SESSION_SECRET: "e2e-test-session-secret-minimum-32-characters",
+        // Session
+        SESSION_SECRET: "e2e-test-session-secret-minimum-32-characters",
 
-      // Redis (local docker via serverless-redis-http)
-      UPSTASH_REDIS_REST_URL: "http://localhost:8079",
-      UPSTASH_REDIS_REST_TOKEN: "e2e-test-token",
+        // Redis (local docker via serverless-redis-http)
+        UPSTASH_REDIS_REST_URL: "http://localhost:8079",
+        UPSTASH_REDIS_REST_TOKEN: "e2e-test-token",
 
-      // Email (mock)
-      RESEND_API_KEY: "re_mock_key",
+        // Email (mock)
+        RESEND_API_KEY: "re_mock_key",
 
-      // OAuth/OIDC
-      OAUTH_ISSUER_URL: "http://localhost:3000",
-      JWT_PRIVATE_KEY: testPrivateKey.replace(/\n/g, "\\n"),
-      JWT_PUBLIC_KEY: testPublicKey.replace(/\n/g, "\\n"),
+        // OAuth/OIDC
+        OAUTH_ISSUER_URL: "http://localhost:3000",
+        JWT_PRIVATE_KEY: testPrivateKey.replace(/\n/g, "\\n"),
+        JWT_PUBLIC_KEY: testPublicKey.replace(/\n/g, "\\n"),
 
-      // Admin
-      ADMIN_PASSWORD: "e2e-test-admin-password",
+        // Admin
+        ADMIN_PASSWORD: "e2e-test-admin-password",
 
-      // Storage (mock)
-      BLOB_READ_WRITE_TOKEN: "vercel_blob_mock",
+        // Storage (mock)
+        BLOB_READ_WRITE_TOKEN: "vercel_blob_mock",
 
-      // App
-      NEXT_PUBLIC_APP_URL: "http://localhost:3000",
-      NEXT_PUBLIC_APP_NAME: "RxLab Auth",
+        // App
+        NEXT_PUBLIC_APP_URL: "http://localhost:3000",
+        NEXT_PUBLIC_APP_NAME: "RxLab Auth",
 
-      // WebAuthn
-      WEBAUTHN_RP_ID: "localhost",
-      WEBAUTHN_RP_NAME: "RxLab Auth",
-      WEBAUTHN_ORIGIN: "http://localhost:3000",
+        // WebAuthn
+        WEBAUTHN_RP_ID: "localhost",
+        WEBAUTHN_RP_NAME: "RxLab Auth",
+        WEBAUTHN_ORIGIN: "http://localhost:3000",
       },
     },
   ],
