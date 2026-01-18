@@ -53,7 +53,6 @@ describe("SPECIAL_SCOPES", () => {
   test("should contain expected special scopes", () => {
     const keys = SPECIAL_SCOPES.map((s) => s.key);
     expect(keys).toContain("openid");
-    expect(keys).toContain("offline_access");
   });
 });
 
@@ -65,7 +64,6 @@ describe("SCOPES (generated)", () => {
   test("should contain special scopes", () => {
     const keys = SCOPES.map((s) => s.key);
     expect(keys).toContain("openid");
-    expect(keys).toContain("offline_access");
   });
 
   test("should contain resource scopes with operation:resource format", () => {

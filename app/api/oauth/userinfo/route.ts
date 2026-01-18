@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { oauthConsents, users } from "@/lib/db/schema";
 import { verifyAccessToken } from "@/lib/oauth/jwt";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 async function handleUserInfo(request: NextRequest) {
   try {
@@ -40,19 +40,25 @@ async function handleUserInfo(request: NextRequest) {
       );
     }
 
-    // Build response based on scopes
-    const scopes = payload.scope.split(" ");
+    // Get granted scopes from database
+    const consent = await db.query.oauthConsents.findFirst({
+      where: and(
+        eq(oauthConsents.userId, user.id),
+        eq(oauthConsents.clientId, payload.client_id)
+      ),
+    });
+    const grantedScopes: string[] = consent ? JSON.parse(consent.scopes) : [];
+
+    // Build response - always include profile, email requires scope from DB
     const response: Record<string, unknown> = {
       sub: user.id,
+      // Always include profile claims
+      name: user.displayName,
+      preferred_username: user.username,
+      picture: `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
     };
 
-    if (scopes.includes("profile")) {
-      response.name = user.displayName;
-      response.preferred_username = user.username;
-      response.picture = `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`;
-    }
-
-    if (scopes.includes("email")) {
+    if (grantedScopes.includes("email")) {
       response.email = user.email;
       response.email_verified = user.emailVerified;
     }

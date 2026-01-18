@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { oauthClients, oauthRefreshTokens, users } from "@/lib/db/schema";
+import { oauthClients, oauthConsents, oauthRefreshTokens, users } from "@/lib/db/schema";
 import { verifyPassword } from "@/lib/auth/password";
 import { getOAuthCode, deleteOAuthCode } from "@/lib/redis";
 import { verifyCodeChallenge } from "@/lib/oauth/pkce";
@@ -138,6 +138,15 @@ async function handleAuthorizationCodeGrant(
     );
   }
 
+  // Get granted scopes from database
+  const consent = await db.query.oauthConsents.findFirst({
+    where: and(
+      eq(oauthConsents.userId, user.id),
+      eq(oauthConsents.clientId, client.id)
+    ),
+  });
+  const grantedScopes: string[] = consent ? JSON.parse(consent.scopes) : [];
+
   // Generate tokens
   const scopeString = codeData.scopes.join(" ");
 
@@ -150,13 +159,13 @@ async function handleAuthorizationCodeGrant(
   const idToken = await signIdToken(
     {
       sub: user.id,
-      email: codeData.scopes.includes("email") ? user.email : undefined,
-      email_verified: codeData.scopes.includes("email") ? user.emailVerified ?? false : undefined,
-      name: codeData.scopes.includes("profile") ? user.displayName ?? undefined : undefined,
-      preferred_username: codeData.scopes.includes("profile") ? user.username ?? undefined : undefined,
-      picture: codeData.scopes.includes("profile")
-        ? `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`
-        : undefined,
+      // Email claims based on granted scopes from database
+      email: grantedScopes.includes("email") ? user.email : undefined,
+      email_verified: grantedScopes.includes("email") ? user.emailVerified ?? false : undefined,
+      // Always include profile claims
+      name: user.displayName ?? undefined,
+      preferred_username: user.username ?? undefined,
+      picture: `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
       nonce: codeData.nonce,
       auth_time: Math.floor(Date.now() / 1000),
     },
