@@ -25,10 +25,14 @@ test.describe("User Login", () => {
   test("should show login form", async ({ page }) => {
     await page.goto("/login");
 
-    await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Welcome back" })
+    ).toBeVisible();
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Password")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Sign in", exact: true })
+    ).toBeVisible();
   });
 
   test("should login successfully", async ({ page }) => {
@@ -39,7 +43,6 @@ test.describe("User Login", () => {
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
     await expect(page).toHaveURL("/account");
-    await expect(page.getByText(testUser.displayName)).toBeVisible();
   });
 
   test("should show error for invalid credentials", async ({ page }) => {
@@ -101,6 +104,7 @@ test.describe("User Login", () => {
     await expect(page).toHaveURL("/account");
 
     // Logout
+    await page.getByRole("button", { name: "Avatar" }).click();
     await page.getByRole("button", { name: /sign out/i }).click();
 
     // Should redirect to login

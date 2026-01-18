@@ -44,11 +44,11 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: 0,
   // Use 1 worker for in-memory SQLite (each worker gets separate DB)
   workers: 1,
   reporter: "html",
-  timeout: 60000, // 60 seconds per test
+  timeout: 30000, // 30 seconds per test
   expect: {
     timeout: 10000, // 10 seconds for assertions
   },
@@ -66,12 +66,19 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: "bun run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-    env: {
+  webServer: [
+    {
+      command: "bun run e2e/mock-oauth-callback-server.ts",
+      url: "http://localhost:3001/health",
+      timeout: 10 * 1000,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "bun run dev",
+      url: "http://localhost:3000",
+      timeout: 30 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
       // Testing flags (both server and client side)
       E2E_SKIP_EMAIL_VERIFICATION: "true",
       NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION: "true",
@@ -109,6 +116,7 @@ export default defineConfig({
       WEBAUTHN_RP_ID: "localhost",
       WEBAUTHN_RP_NAME: "RxLab Auth",
       WEBAUTHN_ORIGIN: "http://localhost:3000",
+      },
     },
-  },
+  ],
 });
