@@ -48,8 +48,8 @@ test.describe("OAuth Consent Flow", () => {
     await page.getByRole("button", { name: "Create Application" }).click();
     await expect(page.getByText("Client Created Successfully")).toBeVisible();
 
-    clientId = await page.locator('input[readonly]').first().inputValue();
-    clientSecret = await page.locator('input[readonly]').nth(1).inputValue();
+    clientId = await page.getByTestId("client-id-display").inputValue();
+    clientSecret = await page.getByTestId("client-secret-display").inputValue();
 
     await page.close();
     await context.close();
