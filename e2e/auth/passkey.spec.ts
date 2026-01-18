@@ -60,11 +60,16 @@ test.describe("Passkey Authentication", () => {
     await page.getByLabel("Password").fill(testUser.password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
-    // Navigate to passkeys
-    await page.goto("/account/passkeys");
+    // Navigate to passkeys and wait for hydration
+    await page.waitForTimeout(3000)
+    await page.goto("/account/passkeys", { waitUntil: "networkidle" });
+
+    // Wait for the button to be visible and interactive (hydration complete)
+    const addButton = page.getByRole("button", { name: "Add Passkey" });
+    await addButton.waitFor({ state: "visible" });
 
     // Click add passkey
-    await page.getByRole("button", { name: "Add Passkey" }).click();
+    await addButton.click();
 
     // Dialog should appear
     await expect(page.getByRole("heading", { name: "Add a Passkey" })).toBeVisible();

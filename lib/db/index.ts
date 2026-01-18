@@ -116,8 +116,9 @@ async function initializeDatabase() {
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         client_id TEXT NOT NULL REFERENCES oauth_clients(id) ON DELETE CASCADE,
         scopes TEXT NOT NULL,
-        expires_at INTEGER NOT NULL,
-        created_at INTEGER NOT NULL
+        expires_at INTEGER,
+        created_at INTEGER NOT NULL,
+        revoked_at INTEGER
       )
     `);
 

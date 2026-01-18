@@ -126,7 +126,7 @@ test.describe("OAuth Token Endpoint", () => {
     // Login as admin
     await page.goto("/admin");
     await page.getByLabel("Admin Password").fill(ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Sign in with Password", exact: true }).click();
     await expect(page).toHaveURL("/admin/dashboard");
 
     // Create a test client
