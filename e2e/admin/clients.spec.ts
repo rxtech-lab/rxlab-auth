@@ -9,11 +9,42 @@ async function adminLogin(page: import("@playwright/test").Page) {
   await expect(page).toHaveURL("/admin/dashboard");
 }
 
-test.describe("Client Form Scope Selection", () => {
+test.describe("OAuth Endpoints Display", () => {
   test.beforeEach(async ({ page }) => {
     await adminLogin(page);
   });
 
+  test("should display OAuth endpoints on new client page", async ({ page }) => {
+    await page.goto("/admin/dashboard/clients/new");
+
+    // Verify OAuth endpoints card is visible
+    await expect(page.getByText("OAuth Server Endpoints")).toBeVisible();
+
+    // Verify key endpoints are displayed
+    await expect(page.getByTestId("oauth-endpoint-issuer")).toBeVisible();
+    await expect(page.getByTestId("oauth-endpoint-authorization")).toBeVisible();
+    await expect(page.getByTestId("oauth-endpoint-token")).toBeVisible();
+    await expect(page.getByTestId("oauth-endpoint-discovery")).toBeVisible();
+
+    // Verify endpoints have values
+    const issuerValue = await page.getByTestId("oauth-endpoint-issuer").inputValue();
+    expect(issuerValue).toBeTruthy();
+
+    const authValue = await page.getByTestId("oauth-endpoint-authorization").inputValue();
+    expect(authValue).toContain("/api/oauth/authorize");
+
+    const tokenValue = await page.getByTestId("oauth-endpoint-token").inputValue();
+    expect(tokenValue).toContain("/api/oauth/token");
+
+    const discoveryValue = await page.getByTestId("oauth-endpoint-discovery").inputValue();
+    expect(discoveryValue).toContain("/.well-known/openid-configuration");
+  });
+});
+
+test.describe("Client Form Scope Selection", () => {
+  test.beforeEach(async ({ page }) => {
+    await adminLogin(page);
+  });
 
   test("should create client with all scopes selected", async ({ page }) => {
     await page.goto("/admin/dashboard/clients/new");
