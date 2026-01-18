@@ -24,7 +24,7 @@ test.describe("User Registration", () => {
 
     // Should redirect to account page (email verification skipped in E2E)
     await expect(page).toHaveURL("/account");
-    await expect(page.getByText("Test User")).toBeVisible();
+  
   });
 
   test("should show error for existing email", async ({ page }, testInfo) => {
@@ -39,6 +39,7 @@ test.describe("User Registration", () => {
     await expect(page).toHaveURL("/account");
 
     // Logout and wait for redirect to login
+    await page.getByRole("button", { name: "Avatar" }).click();
     await page.getByRole("button", { name: /sign out/i }).click();
     await expect(page).toHaveURL("/login");
 

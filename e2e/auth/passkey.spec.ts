@@ -1,10 +1,10 @@
-import { test, expect, BrowserContext } from "@playwright/test";
+import { test, expect, Page, CDPSession } from "@playwright/test";
 
 // Helper to set up WebAuthn virtual authenticator
-async function setupWebAuthn(context: BrowserContext) {
-  const cdpSession = await context.newCDPSession(await context.newPage());
+async function setupWebAuthn(page: Page): Promise<{ cdpSession: CDPSession; authenticatorId: string }> {
+  const cdpSession = await page.context().newCDPSession(page);
   await cdpSession.send("WebAuthn.enable");
-  const { authenticatorId } = await cdpSession.send("WebAuthn.addVirtualAuthenticator", {
+  const result = await cdpSession.send("WebAuthn.addVirtualAuthenticator", {
     options: {
       protocol: "ctap2",
       transport: "internal",
@@ -13,7 +13,7 @@ async function setupWebAuthn(context: BrowserContext) {
       isUserVerified: true,
     },
   });
-  return { cdpSession, authenticatorId };
+  return { cdpSession, authenticatorId: result.authenticatorId };
 }
 
 test.describe("Passkey Authentication", () => {
@@ -98,10 +98,11 @@ test.describe("Passkey with Virtual Authenticator", () => {
     const context = await browser.newContext();
 
     try {
-      // Set up virtual authenticator
-      const { cdpSession, authenticatorId } = await setupWebAuthn(context);
-
+      // Create the page FIRST
       const page = await context.newPage();
+
+      // Set up virtual authenticator on the SAME page we'll use for testing
+      const { cdpSession, authenticatorId } = await setupWebAuthn(page);
 
       // Register user
       await page.goto("/register");
@@ -123,6 +124,7 @@ test.describe("Passkey with Virtual Authenticator", () => {
       await expect(page.getByText("Test Virtual Authenticator")).toBeVisible({ timeout: 10000 });
 
       // Logout
+      await page.getByRole("button", { name: "Avatar" }).click();
       await page.getByRole("button", { name: /sign out/i }).click();
       await expect(page).toHaveURL("/login");
 
