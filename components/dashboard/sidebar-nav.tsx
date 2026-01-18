@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   User,
   KeyRound,
@@ -19,10 +22,10 @@ const iconMap: Record<string, typeof User> = {
 
 interface SidebarNavProps {
   navItems: NavItem[];
-  currentPath: string;
 }
 
-export function SidebarNav({ navItems, currentPath }: SidebarNavProps) {
+export function SidebarNav({ navItems }: SidebarNavProps) {
+  const currentPath = usePathname();
   return (
     <aside className="hidden md:flex w-56 shrink-0 flex-col gap-1">
       {navItems.map((item) => {

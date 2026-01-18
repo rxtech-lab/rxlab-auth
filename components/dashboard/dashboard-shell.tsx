@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { DashboardHeader } from "./dashboard-header";
 import { SidebarNav } from "./sidebar-nav";
 import type { NavItem } from "./types";
@@ -12,7 +11,7 @@ interface DashboardShellProps {
   homeHref: string;
 }
 
-export async function DashboardShell({
+export function DashboardShell({
   children,
   title,
   logo,
@@ -20,9 +19,6 @@ export async function DashboardShell({
   headerRight,
   homeHref,
 }: DashboardShellProps) {
-  const headersList = await headers();
-  const currentPath = headersList.get("x-pathname") || "/";
-
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader
@@ -34,7 +30,7 @@ export async function DashboardShell({
       />
 
       <div className="container mx-auto flex gap-8 px-4 py-6 sm:px-6 lg:py-8">
-        <SidebarNav navItems={navItems} currentPath={currentPath} />
+        <SidebarNav navItems={navItems} />
         <main className="flex-1 min-w-0">{children}</main>
       </div>
     </div>
