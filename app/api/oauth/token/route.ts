@@ -10,7 +10,10 @@ import {
   generateRefreshToken,
 } from "@/lib/oauth/jwt";
 import { tokenRequestSchema } from "@/lib/validations/oauth";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, or, gt } from "drizzle-orm";
+
+// Grace period for refresh token rotation (allows concurrent requests)
+const REFRESH_TOKEN_GRACE_PERIOD_MS = 30 * 1000; // 30 seconds
 
 export async function POST(request: NextRequest) {
   try {
@@ -206,12 +209,17 @@ async function handleRefreshTokenGrant(
   },
   client: typeof oauthClients.$inferSelect
 ) {
-  // Find refresh token
+  // Find refresh token (allow grace period for concurrent requests)
+  const now = new Date();
   const storedToken = await db.query.oauthRefreshTokens.findFirst({
     where: and(
       eq(oauthRefreshTokens.token, data.refresh_token),
       eq(oauthRefreshTokens.clientId, client.id),
-      isNull(oauthRefreshTokens.revokedAt)
+      // Token is valid if: not revoked OR revoked but still in grace period
+      or(
+        isNull(oauthRefreshTokens.revokedAt),
+        gt(oauthRefreshTokens.revokedAt, now)
+      )
     ),
   });
 
@@ -268,10 +276,10 @@ async function handleRefreshTokenGrant(
   const newRefreshToken = generateRefreshToken();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-  // Revoke old token
+  // Revoke old token with grace period (allows concurrent requests to still use it briefly)
   await db
     .update(oauthRefreshTokens)
-    .set({ revokedAt: new Date() })
+    .set({ revokedAt: new Date(Date.now() + REFRESH_TOKEN_GRACE_PERIOD_MS) })
     .where(eq(oauthRefreshTokens.id, storedToken.id));
 
   // Create new token
