@@ -172,36 +172,28 @@ async function handleAuthorizationCodeGrant(
     client.id
   );
 
-  // Generate refresh token if offline_access scope
-  let refreshToken: string | undefined;
-  if (codeData.scopes.includes("offline_access")) {
-    refreshToken = generateRefreshToken();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+  // Always generate refresh token
+  const refreshToken = generateRefreshToken();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-    await db.insert(oauthRefreshTokens).values({
-      id: crypto.randomUUID(),
-      token: refreshToken,
-      userId: user.id,
-      clientId: client.id,
-      scopes: JSON.stringify(codeData.scopes),
-      expiresAt,
-      createdAt: new Date(),
-    });
-  }
+  await db.insert(oauthRefreshTokens).values({
+    id: crypto.randomUUID(),
+    token: refreshToken,
+    userId: user.id,
+    clientId: client.id,
+    scopes: JSON.stringify(codeData.scopes),
+    expiresAt,
+    createdAt: new Date(),
+  });
 
-  const response: Record<string, unknown> = {
+  return NextResponse.json({
     access_token: accessToken,
     token_type: "Bearer",
     expires_in: 3600,
     id_token: idToken,
     scope: scopeString,
-  };
-
-  if (refreshToken) {
-    response.refresh_token = refreshToken;
-  }
-
-  return NextResponse.json(response);
+    refresh_token: refreshToken,
+  });
 }
 
 async function handleRefreshTokenGrant(

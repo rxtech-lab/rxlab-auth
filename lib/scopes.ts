@@ -1,4 +1,4 @@
-import { Key, User, Mail, Shield, Eye, Pencil } from "lucide-react";
+import { Key, User, Mail, Eye, Pencil } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type Operation = "read" | "write";
