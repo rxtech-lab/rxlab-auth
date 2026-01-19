@@ -71,13 +71,13 @@ export default defineConfig({
       command: "bun run e2e/mock-oauth-callback-server.ts",
       url: "http://localhost:3001/health",
       timeout: 10 * 1000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
     },
     {
       command: "bun run dev",
       url: "http://localhost:3000",
       timeout: 30 * 1000,
-      reuseExistingServer: false,
+      reuseExistingServer: true,
       env: {
         // Testing flags (both server and client side)
         E2E_SKIP_EMAIL_VERIFICATION: "true",
