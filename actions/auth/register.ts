@@ -11,6 +11,7 @@ import {
 } from "@/lib/email/templates";
 import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
 import { generateAvatarSeed } from "@/lib/identicon/generate";
+import { checkSignUpAllowed } from "@/lib/settings/sign-up";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
@@ -30,6 +31,18 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
   }
 
   const { email, password, displayName } = parsed.data;
+
+  // Check if sign-up is allowed
+  const signUpCheck = await checkSignUpAllowed(email);
+  if (!signUpCheck.allowed) {
+    return {
+      success: false,
+      error:
+        signUpCheck.reason === "disabled"
+          ? "Sign-up is currently disabled. Please contact an administrator."
+          : "Sign-up is restricted. Your email is not on the approved list.",
+    };
+  }
 
   try {
     // Check if user already exists

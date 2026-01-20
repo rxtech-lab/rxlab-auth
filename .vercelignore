@@ -1,0 +1,2 @@
+# E2E test routes - not needed in production
+app/api/e2e/

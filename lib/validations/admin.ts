@@ -48,3 +48,18 @@ export const updateOAuthClientSchema = z.object({
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
 export type CreateOAuthClientInput = z.infer<typeof createOAuthClientSchema>;
 export type UpdateOAuthClientInput = z.infer<typeof updateOAuthClientSchema>;
+
+// Sign-up settings schemas
+export const updateSignUpSettingsSchema = z.object({
+  signUpEnabled: z.boolean(),
+  signUpWhitelistEnabled: z.boolean(),
+});
+
+export const addWhitelistEmailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+export type UpdateSignUpSettingsInput = z.infer<
+  typeof updateSignUpSettingsSchema
+>;
+export type AddWhitelistEmailInput = z.infer<typeof addWhitelistEmailSchema>;

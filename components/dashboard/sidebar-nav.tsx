@@ -4,20 +4,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   User,
+  Users,
   KeyRound,
   AppWindow,
   LayoutDashboard,
   Shield,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NavItem } from "./types";
 
 const iconMap: Record<string, typeof User> = {
   User,
+  Users,
   KeyRound,
   AppWindow,
   LayoutDashboard,
   Shield,
+  Settings,
 };
 
 interface SidebarNavProps {
