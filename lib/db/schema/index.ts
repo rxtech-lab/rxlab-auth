@@ -11,3 +11,7 @@ export * from "./oauth-refresh-tokens";
 
 // Admin schemas
 export * from "./admin-passkeys";
+
+// App settings
+export * from "./app-settings";
+export * from "./email-whitelist";

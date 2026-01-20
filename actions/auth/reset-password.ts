@@ -20,6 +20,7 @@ import { redirect } from "next/navigation";
 export interface ResetPasswordResult {
   success: boolean;
   error?: string;
+  token?: string; // Only returned in E2E mode
 }
 
 export async function requestPasswordReset(
@@ -73,6 +74,11 @@ export async function requestPasswordReset(
       text: getPasswordResetEmailText(token),
     });
 
+    // Return token in E2E mode for testing
+    if (process.env.E2E_SKIP_EMAIL_VERIFICATION === "true") {
+      return { success: true, token };
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Password reset request error:", error);
@@ -81,6 +87,21 @@ export async function requestPasswordReset(
       error: "An error occurred. Please try again.",
     };
   }
+}
+
+export async function requestPasswordResetAndRedirect(
+  input: ResetPasswordRequestInput
+): Promise<void> {
+  const result = await requestPasswordReset(input);
+
+  // Always redirect to show "sent" confirmation, regardless of whether email exists
+  // This prevents email enumeration attacks
+  if (result.success) {
+    redirect("/reset-password?sent=true");
+  }
+
+  // Only throw for actual errors (not "user not found")
+  throw new Error(result.error || "An error occurred");
 }
 
 export async function resetPassword(
@@ -97,7 +118,7 @@ export async function resetPassword(
   const { token, password } = parsed.data;
 
   try {
-    // Find token
+    // Find token - must exist, not expired, and have been validated (usedAt set)
     const resetToken = await db.query.passwordResetTokens.findFirst({
       where: and(
         eq(passwordResetTokens.token, token),
@@ -105,7 +126,7 @@ export async function resetPassword(
       ),
     });
 
-    if (!resetToken) {
+    if (!resetToken || !resetToken.usedAt) {
       return {
         success: false,
         error: "Invalid or expired reset token",
@@ -149,4 +170,67 @@ export async function resetPasswordAndRedirect(
   }
 
   throw new Error(result.error);
+}
+
+export async function validateResetToken(
+  token: string
+): Promise<{ valid: boolean; error?: string }> {
+  if (!token) {
+    return { valid: false, error: "Token is required" };
+  }
+
+  try {
+    const resetToken = await db.query.passwordResetTokens.findFirst({
+      where: and(
+        eq(passwordResetTokens.token, token),
+        gt(passwordResetTokens.expiresAt, new Date())
+      ),
+    });
+
+    if (!resetToken) {
+      return { valid: false, error: "This link has expired or already been used" };
+    }
+
+    // If token was already used (page was visited before), reject it
+    if (resetToken.usedAt) {
+      return { valid: false, error: "This link has already been used" };
+    }
+
+    return { valid: true };
+  } catch (error) {
+    console.error("Token validation error:", error);
+    return { valid: false, error: "An error occurred" };
+  }
+}
+
+export async function expireToken(
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!token) {
+    return { success: false, error: "Token is required" };
+  }
+
+  try {
+    const resetToken = await db.query.passwordResetTokens.findFirst({
+      where: and(
+        eq(passwordResetTokens.token, token),
+        gt(passwordResetTokens.expiresAt, new Date())
+      ),
+    });
+
+    if (!resetToken) {
+      return { success: false, error: "Invalid or expired token" };
+    }
+
+    // Mark token as used
+    await db
+      .update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokens.id, resetToken.id));
+
+    return { success: true };
+  } catch (error) {
+    console.error("Expire token error:", error);
+    return { success: false, error: "An error occurred" };
+  }
 }

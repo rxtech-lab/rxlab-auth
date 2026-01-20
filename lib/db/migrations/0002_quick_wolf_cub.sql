@@ -1,0 +1,1 @@
+ALTER TABLE `password_reset_tokens` ADD `used_at` integer;

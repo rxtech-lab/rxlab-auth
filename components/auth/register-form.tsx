@@ -4,13 +4,17 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Loader2, Mail, Lock, User } from "lucide-react";
+import { Loader2, Mail, Lock, User, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { register } from "@/actions/auth/register";
 
-export function RegisterForm() {
+interface RegisterFormProps {
+  whitelistOnly?: boolean;
+}
+
+export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,6 +53,13 @@ export function RegisterForm() {
           Enter your details to get started
         </p>
       </div>
+
+      {whitelistOnly && (
+        <div className="flex gap-2 items-start bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 text-sm rounded-lg p-3">
+          <Info className="size-4 mt-0.5 shrink-0" />
+          <p>Sign-up is restricted to approved emails only.</p>
+        </div>
+      )}
 
       {error && (
         <motion.div

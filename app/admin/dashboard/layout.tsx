@@ -4,12 +4,14 @@ import { QueryProvider } from "@/providers/query-provider";
 import { DashboardShell, type NavItem } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { adminLogout } from "@/actions/admin/logout";
-import { Shield, LogOut } from "lucide-react";
+import { Shield, LogOut, Users } from "lucide-react";
 
 const navItems: NavItem[] = [
   { href: "/admin/dashboard", label: "Overview", iconName: "LayoutDashboard" },
   { href: "/admin/dashboard/clients", label: "OAuth Clients", iconName: "Shield" },
+  { href: "/admin/dashboard/users", label: "Users", iconName: "Users" },
   { href: "/admin/dashboard/passkeys", label: "Passkeys", iconName: "KeyRound" },
+  { href: "/admin/dashboard/settings", label: "Settings", iconName: "Settings" },
 ];
 
 export default async function AdminDashboardLayout({

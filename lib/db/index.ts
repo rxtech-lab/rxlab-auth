@@ -77,7 +77,8 @@ async function initializeDatabase() {
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         token TEXT NOT NULL UNIQUE,
         expires_at INTEGER NOT NULL,
-        created_at INTEGER NOT NULL
+        created_at INTEGER NOT NULL,
+        used_at INTEGER
       )
     `);
 
@@ -133,6 +134,23 @@ async function initializeDatabase() {
         transports TEXT,
         created_at INTEGER NOT NULL,
         last_used_at INTEGER
+      )
+    `);
+
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        id TEXT PRIMARY KEY,
+        sign_up_enabled INTEGER DEFAULT 1 NOT NULL,
+        sign_up_whitelist_enabled INTEGER DEFAULT 0 NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS email_whitelist (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        created_at INTEGER NOT NULL
       )
     `);
 

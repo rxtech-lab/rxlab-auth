@@ -12,6 +12,10 @@ export interface SendEmailOptions {
 }
 
 export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
+  if (process.env.E2E_SKIP_EMAIL_VERIFICATION === "true") {
+    return;
+  }
+
   const { data, error } = await resend.emails.send({
     from: EMAIL_FROM,
     to,
