@@ -14,6 +14,7 @@ import {
   signIdToken,
   generateRefreshToken,
 } from "@/lib/oauth/jwt";
+import { parseBasicAuth } from "@/lib/oauth/basic-auth";
 import { tokenRequestSchema } from "@/lib/validations/oauth";
 import { eq, and, isNull, or, gt } from "drizzle-orm";
 
@@ -28,6 +29,19 @@ export async function POST(request: NextRequest) {
     formData.forEach((value, key) => {
       body[key] = value.toString();
     });
+
+    // Support client credentials from Authorization header (Basic auth)
+    const authHeader = request.headers.get("authorization");
+    const basicAuth = parseBasicAuth(authHeader);
+    if (basicAuth) {
+      // Only use header values if not already in body
+      if (!body.client_id) {
+        body.client_id = basicAuth.clientId;
+      }
+      if (!body.client_secret) {
+        body.client_secret = basicAuth.clientSecret;
+      }
+    }
 
     // Validate request
     const parsed = tokenRequestSchema.safeParse(body);
