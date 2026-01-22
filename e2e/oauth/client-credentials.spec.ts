@@ -173,4 +173,98 @@ test.describe("OAuth Client Credentials Flow", () => {
     const config = await response.json();
     expect(config.grant_types_supported).toContain("client_credentials");
   });
+
+  test.describe("Basic Auth Header Support", () => {
+    test("should accept credentials via Authorization Basic header", async ({
+      request,
+    }) => {
+      const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
+        "base64",
+      );
+
+      const response = await request.post("/api/oauth/token", {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+        form: {
+          grant_type: "client_credentials",
+          scope: "read:profile",
+        },
+      });
+
+      expect(response.ok()).toBeTruthy();
+      const tokens = await response.json();
+
+      expect(tokens.access_token).toBeTruthy();
+      expect(tokens.token_type).toBe("Bearer");
+      expect(tokens.scope).toBe("read:profile");
+    });
+
+    test("should prefer body credentials over header credentials", async ({
+      request,
+    }) => {
+      // Send wrong credentials in header but correct in body
+      const wrongCredentials = Buffer.from("wrong:wrong").toString("base64");
+
+      const response = await request.post("/api/oauth/token", {
+        headers: {
+          Authorization: `Basic ${wrongCredentials}`,
+        },
+        form: {
+          grant_type: "client_credentials",
+          client_id: clientId,
+          client_secret: clientSecret,
+          scope: "read:profile",
+        },
+      });
+
+      // Should succeed because body credentials take precedence
+      expect(response.ok()).toBeTruthy();
+      const tokens = await response.json();
+      expect(tokens.access_token).toBeTruthy();
+    });
+
+    test("should reject invalid Basic auth credentials", async ({
+      request,
+    }) => {
+      const wrongCredentials = Buffer.from(
+        `${clientId}:wrong-secret`,
+      ).toString("base64");
+
+      const response = await request.post("/api/oauth/token", {
+        headers: {
+          Authorization: `Basic ${wrongCredentials}`,
+        },
+        form: {
+          grant_type: "client_credentials",
+        },
+      });
+
+      expect(response.status()).toBe(401);
+      const error = await response.json();
+      expect(error.error).toBe("invalid_client");
+    });
+
+    test("should handle credentials with special characters via Basic auth", async ({
+      request,
+    }) => {
+      // The clientSecret may contain special characters, test that it works
+      const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
+        "base64",
+      );
+
+      const response = await request.post("/api/oauth/token", {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+        form: {
+          grant_type: "client_credentials",
+        },
+      });
+
+      expect(response.ok()).toBeTruthy();
+      const tokens = await response.json();
+      expect(tokens.access_token).toBeTruthy();
+    });
+  });
 });
