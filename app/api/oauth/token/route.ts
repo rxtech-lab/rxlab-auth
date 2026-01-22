@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { oauthClients, oauthConsents, oauthRefreshTokens, users } from "@/lib/db/schema";
+import {
+  oauthClients,
+  oauthConsents,
+  oauthRefreshTokens,
+  users,
+} from "@/lib/db/schema";
 import { verifyPassword } from "@/lib/auth/password";
 import { getOAuthCode, deleteOAuthCode } from "@/lib/redis";
 import { verifyCodeChallenge } from "@/lib/oauth/pkce";
@@ -27,12 +32,13 @@ export async function POST(request: NextRequest) {
     // Validate request
     const parsed = tokenRequestSchema.safeParse(body);
     if (!parsed.success) {
+      console.log("Token request validation failed:", parsed.error);
       return NextResponse.json(
         {
           error: "invalid_request",
           error_description: parsed.error.issues[0]?.message,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,35 +50,43 @@ export async function POST(request: NextRequest) {
     });
 
     if (!client) {
+      console.log("OAuth client not found:", data.client_id);
       return NextResponse.json(
         { error: "invalid_client", error_description: "Client not found" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const secretValid = await verifyPassword(client.secret, data.client_secret);
     if (!secretValid) {
+      console.log("Invalid client secret for client:", data.client_id);
       return NextResponse.json(
         { error: "invalid_client", error_description: "Invalid client secret" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     if (data.grant_type === "authorization_code") {
+      console.log("Handling authorization code grant");
       return handleAuthorizationCodeGrant(data, client);
     } else if (data.grant_type === "refresh_token") {
+      console.log("Handling refresh token grant");
       return handleRefreshTokenGrant(data, client);
+    } else if (data.grant_type === "client_credentials") {
+      console.log("Handling client credentials grant");
+      return handleClientCredentialsGrant(data, client);
     }
 
+    console.log("Unsupported grant type:", data);
     return NextResponse.json(
       { error: "unsupported_grant_type" },
-      { status: 400 }
+      { status: 400 },
     );
   } catch (error) {
     console.error("Token endpoint error:", error);
     return NextResponse.json(
       { error: "server_error", error_description: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -86,22 +100,28 @@ async function handleAuthorizationCodeGrant(
     client_id: string;
     client_secret: string;
   },
-  client: typeof oauthClients.$inferSelect
+  client: typeof oauthClients.$inferSelect,
 ) {
   // Get stored authorization code
   const codeData = await getOAuthCode(data.code);
   if (!codeData) {
     return NextResponse.json(
-      { error: "invalid_grant", error_description: "Authorization code expired or invalid" },
-      { status: 400 }
+      {
+        error: "invalid_grant",
+        error_description: "Authorization code expired or invalid",
+      },
+      { status: 400 },
     );
   }
 
   // Validate code belongs to this client
   if (codeData.clientId !== data.client_id) {
     return NextResponse.json(
-      { error: "invalid_grant", error_description: "Code does not belong to this client" },
-      { status: 400 }
+      {
+        error: "invalid_grant",
+        error_description: "Code does not belong to this client",
+      },
+      { status: 400 },
     );
   }
 
@@ -109,7 +129,7 @@ async function handleAuthorizationCodeGrant(
   if (codeData.redirectUri !== data.redirect_uri) {
     return NextResponse.json(
       { error: "invalid_grant", error_description: "Redirect URI mismatch" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -117,12 +137,12 @@ async function handleAuthorizationCodeGrant(
   const pkceValid = verifyCodeChallenge(
     data.code_verifier,
     codeData.codeChallenge,
-    codeData.codeChallengeMethod
+    codeData.codeChallengeMethod,
   );
   if (!pkceValid) {
     return NextResponse.json(
       { error: "invalid_grant", error_description: "PKCE verification failed" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -137,7 +157,7 @@ async function handleAuthorizationCodeGrant(
   if (!user) {
     return NextResponse.json(
       { error: "invalid_grant", error_description: "User not found" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -145,7 +165,7 @@ async function handleAuthorizationCodeGrant(
   const consent = await db.query.oauthConsents.findFirst({
     where: and(
       eq(oauthConsents.userId, user.id),
-      eq(oauthConsents.clientId, client.id)
+      eq(oauthConsents.clientId, client.id),
     ),
   });
   const grantedScopes: string[] = consent ? JSON.parse(consent.scopes) : [];
@@ -164,7 +184,9 @@ async function handleAuthorizationCodeGrant(
       sub: user.id,
       // Email claims based on granted scopes from database
       email: grantedScopes.includes("email") ? user.email : undefined,
-      email_verified: grantedScopes.includes("email") ? user.emailVerified ?? false : undefined,
+      email_verified: grantedScopes.includes("email")
+        ? (user.emailVerified ?? false)
+        : undefined,
       // Always include profile claims
       name: user.displayName ?? undefined,
       preferred_username: user.username ?? undefined,
@@ -172,7 +194,7 @@ async function handleAuthorizationCodeGrant(
       nonce: codeData.nonce,
       auth_time: Math.floor(Date.now() / 1000),
     },
-    client.id
+    client.id,
   );
 
   // Always generate refresh token
@@ -207,7 +229,7 @@ async function handleRefreshTokenGrant(
     client_secret: string;
     scope?: string;
   },
-  client: typeof oauthClients.$inferSelect
+  client: typeof oauthClients.$inferSelect,
 ) {
   // Find refresh token (allow grace period for concurrent requests)
   const now = new Date();
@@ -218,15 +240,15 @@ async function handleRefreshTokenGrant(
       // Token is valid if: not revoked OR revoked but still in grace period
       or(
         isNull(oauthRefreshTokens.revokedAt),
-        gt(oauthRefreshTokens.revokedAt, now)
-      )
+        gt(oauthRefreshTokens.revokedAt, now),
+      ),
     ),
   });
 
   if (!storedToken) {
     return NextResponse.json(
       { error: "invalid_grant", error_description: "Invalid refresh token" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -234,7 +256,7 @@ async function handleRefreshTokenGrant(
   if (storedToken.expiresAt && storedToken.expiresAt < new Date()) {
     return NextResponse.json(
       { error: "invalid_grant", error_description: "Refresh token expired" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -246,7 +268,7 @@ async function handleRefreshTokenGrant(
   if (!user) {
     return NextResponse.json(
       { error: "invalid_grant", error_description: "User not found" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -258,8 +280,11 @@ async function handleRefreshTokenGrant(
   const validScopes = requestedScopes.every((s) => storedScopes.includes(s));
   if (!validScopes) {
     return NextResponse.json(
-      { error: "invalid_scope", error_description: "Requested scopes exceed original grant" },
-      { status: 400 }
+      {
+        error: "invalid_scope",
+        error_description: "Requested scopes exceed original grant",
+      },
+      { status: 400 },
     );
   }
 
@@ -298,6 +323,60 @@ async function handleRefreshTokenGrant(
     token_type: "Bearer",
     expires_in: 3600,
     refresh_token: newRefreshToken,
+    scope: scopeString,
+  });
+}
+
+async function handleClientCredentialsGrant(
+  data: {
+    grant_type: "client_credentials";
+    client_id: string;
+    client_secret: string;
+    scope?: string;
+  },
+  client: typeof oauthClients.$inferSelect,
+) {
+  // Get allowed scopes for this client
+  const allowedScopes: string[] = JSON.parse(client.allowedScopes);
+
+  // Determine which scopes to grant
+  let requestedScopes: string[];
+  if (data.scope) {
+    // Parse requested scopes
+    requestedScopes = data.scope.split(" ").filter(Boolean);
+
+    // Validate requested scopes against allowed scopes
+    const invalidScopes = requestedScopes.filter(
+      (s) => !allowedScopes.includes(s),
+    );
+    if (invalidScopes.length > 0) {
+      return NextResponse.json(
+        {
+          error: "invalid_scope",
+          error_description: `Requested scope(s) not allowed: ${invalidScopes.join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
+  } else {
+    // No scope requested - use all allowed scopes
+    requestedScopes = allowedScopes;
+  }
+
+  const scopeString = requestedScopes.join(" ");
+
+  // Generate access token (no user - use client_id as subject)
+  const accessToken = await signAccessToken({
+    sub: client.id,
+    client_id: client.id,
+    scope: scopeString,
+  });
+
+  // Return token response (no refresh_token, no id_token for client_credentials)
+  return NextResponse.json({
+    access_token: accessToken,
+    token_type: "Bearer",
+    expires_in: 3600,
     scope: scopeString,
   });
 }
