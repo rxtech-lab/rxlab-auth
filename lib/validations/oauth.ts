@@ -32,6 +32,13 @@ export const tokenRequestSchema = z.discriminatedUnion("grant_type", [
     client_secret: z.string().min(1, "client_secret is required"),
     scope: z.string().optional(),
   }),
+  // Client credentials grant (machine-to-machine)
+  z.object({
+    grant_type: z.literal("client_credentials"),
+    client_id: z.string().min(1, "client_id is required"),
+    client_secret: z.string().min(1, "client_secret is required"),
+    scope: z.string().optional(),
+  }),
 ]);
 
 export const revokeRequestSchema = z.object({
