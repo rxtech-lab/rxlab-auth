@@ -219,7 +219,8 @@ test.describe("OAuth Public Client Flow", () => {
 
     const json = await response.json();
     expect(response.status()).toBe(400);
-    expect(json.error).toContain("code_challenge");
+    expect(json.error).toBe("invalid_request");
+    expect(json.error_description).toContain("code_challenge");
   });
 
   test("should revoke tokens without client_secret for public clients", async ({ page, request }) => {

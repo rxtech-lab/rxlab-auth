@@ -11,6 +11,29 @@ import {
 } from "@/lib/validations/oauth";
 import { eq, and } from "drizzle-orm";
 
+function isBrowserRequest(request: Request): boolean {
+  const accept = request.headers.get("accept") || "";
+  return accept.includes("text/html");
+}
+
+function errorResponse(
+  request: NextRequest,
+  error: string,
+  errorDescription: string,
+  status: number
+): NextResponse {
+  if (isBrowserRequest(request)) {
+    const errorUrl = new URL("/oauth/error", request.url);
+    errorUrl.searchParams.set("error", error);
+    errorUrl.searchParams.set("error_description", errorDescription);
+    return NextResponse.redirect(errorUrl);
+  }
+  return NextResponse.json(
+    { error, error_description: errorDescription },
+    { status }
+  );
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
 
@@ -28,8 +51,8 @@ export async function GET(request: NextRequest) {
 
   const parsed = authorizeRequestSchema.safeParse(params);
   if (!parsed.success) {
-    const error = parsed.error.issues[0]?.message || "Invalid request";
-    return NextResponse.json({ error }, { status: 400 });
+    const errorMessage = parsed.error.issues[0]?.message || "Invalid request";
+    return errorResponse(request, "invalid_request", errorMessage, 400);
   }
 
   const {
@@ -48,15 +71,17 @@ export async function GET(request: NextRequest) {
   });
 
   if (!client) {
-    return NextResponse.json({ error: "Invalid client_id" }, { status: 400 });
+    return errorResponse(request, "invalid_client", "Client not found", 400);
   }
 
   // Validate redirect URI
   const allowedRedirectUris: string[] = JSON.parse(client.redirectUris);
   if (!allowedRedirectUris.includes(redirect_uri)) {
-    return NextResponse.json(
-      { error: "Invalid redirect_uri" },
-      { status: 400 }
+    return errorResponse(
+      request,
+      "invalid_redirect_uri",
+      "The redirect URI does not match the registered URI",
+      400
     );
   }
 
