@@ -51,11 +51,21 @@ export async function createOAuthClient(
     name: string;
     redirectUri: string;
     scopes?: string[];
+    clientType?: "public" | "confidential";
   }
 ) {
   await page.goto("/admin/dashboard/clients/new");
 
   await page.getByTestId("client-name").fill(options.name);
+
+  // Select client type if specified
+  if (options.clientType === "public") {
+    await page.getByTestId("client-type-public").click();
+  } else {
+    // Default to confidential
+    await page.getByTestId("client-type-confidential").click();
+  }
+
   await page.getByTestId("redirect-uri-0").fill(options.redirectUri);
 
   // Select additional scopes if provided using data-testid
@@ -70,12 +80,21 @@ export async function createOAuthClient(
 
   await page.getByTestId("submit-button").click();
 
-  // Wait for credentials to be shown
-  await expect(page.getByText("Client Created Successfully")).toBeVisible();
+  // Wait for creation message
+  if (options.clientType === "public") {
+    await expect(page.getByText("Public Client Created")).toBeVisible();
+  } else {
+    await expect(page.getByText("Client Created Successfully")).toBeVisible();
+  }
 
   // Extract credentials using data-testid
   const clientId = await page.getByTestId("client-id-display").inputValue();
-  const clientSecret = await page.getByTestId("client-secret-display").inputValue();
+
+  // Only confidential clients have secrets
+  let clientSecret: string | undefined;
+  if (options.clientType !== "public") {
+    clientSecret = await page.getByTestId("client-secret-display").inputValue();
+  }
 
   await page.getByTestId("done-button").click();
 

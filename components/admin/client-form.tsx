@@ -25,6 +25,7 @@ interface ClientFormProps {
     redirectUris: string[];
     allowedScopes: string[];
     isFirstParty: boolean;
+    clientType?: "public" | "confidential";
   };
 }
 
@@ -41,10 +42,13 @@ export function ClientForm({ client }: ClientFormProps) {
     client?.allowedScopes || ["openid"]
   );
   const [isFirstParty, setIsFirstParty] = useState(client?.isFirstParty || false);
+  const [clientType, setClientType] = useState<"public" | "confidential">(
+    client?.clientType || "confidential"
+  );
   const [error, setError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<{
     clientId: string;
-    clientSecret: string;
+    clientSecret?: string;
   } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -137,8 +141,9 @@ export function ClientForm({ client }: ClientFormProps) {
           redirectUris: validUris,
           allowedScopes: allowedScopes as ("openid" | "profile" | "email" | "offline_access")[],
           isFirstParty,
+          clientType,
         });
-        if (result.success && result.clientId && result.clientSecret) {
+        if (result.success && result.clientId) {
           setCredentials({
             clientId: result.clientId,
             clientSecret: result.clientSecret,
@@ -157,14 +162,28 @@ export function ClientForm({ client }: ClientFormProps) {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6"
       >
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-          <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
-            Client Created Successfully!
-          </h3>
-          <p className="text-sm text-green-700 dark:text-green-300 mb-4">
-            Save these credentials now. The client secret will not be shown again.
-          </p>
-        </div>
+        {clientType === "public" ? (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+              Public Client Created!
+            </h3>
+            <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+              This is a public client. No client secret is generated.
+            </p>
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              You must use PKCE (Proof Key for Code Exchange) for authorization code flow.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+              Client Created Successfully!
+            </h3>
+            <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+              Save these credentials now. The client secret will not be shown again.
+            </p>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-2">
@@ -186,29 +205,31 @@ export function ClientForm({ client }: ClientFormProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Client Secret</Label>
-            <div className="flex gap-2">
-              <Input
-                data-testid="client-secret-display"
-                value={credentials.clientSecret}
-                readOnly
-                className="font-mono"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => handleCopy(credentials.clientSecret, "secret")}
-              >
-                {copied === "secret" ? (
-                  <Check className="size-4" />
-                ) : (
-                  <Copy className="size-4" />
-                )}
-              </Button>
+          {clientType === "confidential" && credentials.clientSecret && (
+            <div className="space-y-2">
+              <Label>Client Secret</Label>
+              <div className="flex gap-2">
+                <Input
+                  data-testid="client-secret-display"
+                  value={credentials.clientSecret}
+                  readOnly
+                  className="font-mono"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleCopy(credentials.clientSecret, "secret")}
+                >
+                  {copied === "secret" ? (
+                    <Check className="size-4" />
+                  ) : (
+                    <Copy className="size-4" />
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <Button data-testid="done-button" onClick={() => router.push("/admin/dashboard/clients")}>
@@ -253,6 +274,52 @@ export function ClientForm({ client }: ClientFormProps) {
           onChange={(e) => setDescription(e.target.value)}
           disabled={isPending}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Client Type *</Label>
+        <p className="text-xs text-muted-foreground">
+          Choose the type of OAuth client based on your application
+        </p>
+        <div className="flex flex-col gap-3 mt-2">
+          <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <input
+              type="radio"
+              name="clientType"
+              data-testid="client-type-confidential"
+              value="confidential"
+              checked={clientType === "confidential"}
+              onChange={(e) => setClientType(e.target.value as "confidential")}
+              disabled={isPending || isEditing}
+              className="mt-1"
+            />
+            <div className="flex-1">
+              <span className="text-sm font-medium">Confidential Client</span>
+              <p className="text-xs text-muted-foreground">
+                Server-side apps that can securely store secrets (requires client_secret)
+              </p>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <input
+              type="radio"
+              name="clientType"
+              data-testid="client-type-public"
+              value="public"
+              checked={clientType === "public"}
+              onChange={(e) => setClientType(e.target.value as "public")}
+              disabled={isPending || isEditing}
+              className="mt-1"
+            />
+            <div className="flex-1">
+              <span className="text-sm font-medium">Public Client</span>
+              <p className="text-xs text-muted-foreground">
+                SPAs, mobile apps that cannot securely store secrets (uses PKCE only)
+              </p>
+            </div>
+          </label>
+        </div>
       </div>
 
       <div className="space-y-2">

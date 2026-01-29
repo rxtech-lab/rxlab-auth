@@ -28,19 +28,25 @@ export async function createOAuthClient(
       };
     }
 
-    const { name, description, redirectUris, allowedScopes, isFirstParty } = parsed.data;
+    const { name, description, redirectUris, allowedScopes, isFirstParty, clientType } = parsed.data;
 
-    // Generate client credentials
+    // Generate client ID
     const clientId = `client_${crypto.randomUUID().replace(/-/g, "")}`;
-    const clientSecret = `secret_${crypto.randomUUID().replace(/-/g, "")}${crypto.randomUUID().replace(/-/g, "")}`;
 
-    // Hash the secret
-    const hashedSecret = await hashPassword(clientSecret);
+    // Only generate secret for confidential clients
+    let clientSecret: string | undefined;
+    let hashedSecret: string | null = null;
+
+    if (clientType === "confidential") {
+      clientSecret = `secret_${crypto.randomUUID().replace(/-/g, "")}${crypto.randomUUID().replace(/-/g, "")}`;
+      hashedSecret = await hashPassword(clientSecret);
+    }
 
     const now = new Date();
 
     await db.insert(oauthClients).values({
       id: clientId,
+      clientType,
       secret: hashedSecret,
       name,
       description: description || null,
@@ -54,7 +60,7 @@ export async function createOAuthClient(
     return {
       success: true,
       clientId,
-      clientSecret, // Return unhashed for display once
+      clientSecret, // undefined for public clients
     };
   } catch (error) {
     console.error("Create client error:", error);

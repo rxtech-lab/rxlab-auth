@@ -5,7 +5,7 @@
  */
 export function parseBasicAuth(
   authHeader: string | null,
-): { clientId: string; clientSecret: string } | null {
+): { clientId: string; clientSecret: string | undefined } | null {
   if (!authHeader?.startsWith("Basic ")) {
     return null;
   }
@@ -28,7 +28,11 @@ export function parseBasicAuth(
       return null;
     }
 
-    return { clientId, clientSecret };
+    // Allow empty clientSecret for public clients
+    return {
+      clientId,
+      clientSecret: clientSecret || undefined,
+    };
   } catch {
     return null;
   }

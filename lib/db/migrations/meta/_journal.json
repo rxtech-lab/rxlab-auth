@@ -22,6 +22,13 @@
       "when": 1768888493219,
       "tag": "0002_quick_wolf_cub",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1769649514081,
+      "tag": "0003_chilly_husk",
+      "breakpoints": true
     }
   ]
 }

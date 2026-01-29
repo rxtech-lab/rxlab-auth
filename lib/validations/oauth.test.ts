@@ -90,6 +90,31 @@ describe("tokenRequestSchema - authorization_code", () => {
 
     expect(result.success).toBe(false);
   });
+
+  test("should accept authorization_code without client_secret (public client)", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "authorization_code",
+      code: "test-code",
+      redirect_uri: "https://example.com/callback",
+      code_verifier: "test-verifier",
+      client_id: "test-client",
+      // No client_secret - for public clients
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test("should require code_verifier for PKCE", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "authorization_code",
+      code: "test-code",
+      redirect_uri: "https://example.com/callback",
+      client_id: "test-client",
+      // Missing code_verifier
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("tokenRequestSchema - refresh_token", () => {
@@ -117,6 +142,17 @@ describe("tokenRequestSchema - refresh_token", () => {
     if (result.success) {
       expect(result.data.scope).toBe("read:profile");
     }
+  });
+
+  test("should accept refresh_token without client_secret (public client)", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "refresh_token",
+      refresh_token: "test-refresh-token",
+      client_id: "test-client",
+      // No client_secret - for public clients
+    });
+
+    expect(result.success).toBe(true);
   });
 });
 

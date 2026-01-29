@@ -21,6 +21,7 @@ export const createOAuthClientSchema = z.object({
     .array(z.enum(SUPPORTED_SCOPES))
     .min(1, "At least one scope is required"),
   isFirstParty: z.boolean().optional().default(false),
+  clientType: z.enum(["public", "confidential"]).default("confidential"),
 });
 
 export const updateOAuthClientSchema = z.object({
