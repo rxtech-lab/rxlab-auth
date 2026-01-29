@@ -4,7 +4,10 @@ export const oauthClients = sqliteTable(
   "oauth_clients",
   {
     id: text("id").primaryKey(), // client_id
-    secret: text("secret").notNull(), // hashed client_secret
+    clientType: text("client_type", { enum: ["public", "confidential"] })
+      .notNull()
+      .default("confidential"), // Client type for OAuth 2.0
+    secret: text("secret"), // hashed client_secret (null for public clients)
     name: text("name").notNull(),
     description: text("description"),
     iconUrl: text("icon_url"), // Vercel Blob URL

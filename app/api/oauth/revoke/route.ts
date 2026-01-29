@@ -33,10 +33,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({});
     }
 
-    const secretValid = await verifyPassword(client.secret, client_secret);
-    if (!secretValid) {
-      return NextResponse.json({});
+    // For confidential clients, validate the secret
+    if (client.clientType === "confidential") {
+      if (!client_secret || !client.secret) {
+        return NextResponse.json({});
+      }
+
+      const secretValid = await verifyPassword(client.secret, client_secret);
+      if (!secretValid) {
+        return NextResponse.json({});
+      }
     }
+    // Public clients can revoke tokens without a secret
 
     // Try to revoke as refresh token
     const refreshToken = await db.query.oauthRefreshTokens.findFirst({

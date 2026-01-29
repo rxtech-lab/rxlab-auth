@@ -15,28 +15,28 @@ export const authorizeRequestSchema = z.object({
 });
 
 export const tokenRequestSchema = z.discriminatedUnion("grant_type", [
-  // Authorization code grant
+  // Authorization code grant (public clients don't need client_secret)
   z.object({
     grant_type: z.literal("authorization_code"),
     code: z.string().min(1, "code is required"),
     redirect_uri: z.string().url("redirect_uri must be a valid URL"),
     code_verifier: z.string().min(1, "code_verifier is required (PKCE)"),
     client_id: z.string().min(1, "client_id is required"),
-    client_secret: z.string().min(1, "client_secret is required"),
+    client_secret: z.string().optional(),
   }),
-  // Refresh token grant
+  // Refresh token grant (public clients don't need client_secret)
   z.object({
     grant_type: z.literal("refresh_token"),
     refresh_token: z.string().min(1, "refresh_token is required"),
     client_id: z.string().min(1, "client_id is required"),
-    client_secret: z.string().min(1, "client_secret is required"),
+    client_secret: z.string().optional(),
     scope: z.string().optional(),
   }),
-  // Client credentials grant (machine-to-machine)
+  // Client credentials grant (machine-to-machine) - client_secret validated in route
   z.object({
     grant_type: z.literal("client_credentials"),
     client_id: z.string().min(1, "client_id is required"),
-    client_secret: z.string().min(1, "client_secret is required"),
+    client_secret: z.string().min(1).optional(),
     scope: z.string().optional(),
   }),
 ]);
@@ -45,7 +45,7 @@ export const revokeRequestSchema = z.object({
   token: z.string().min(1, "token is required"),
   token_type_hint: z.enum(["access_token", "refresh_token"]).optional(),
   client_id: z.string().min(1, "client_id is required"),
-  client_secret: z.string().min(1, "client_secret is required"),
+  client_secret: z.string().optional(),
 });
 
 export type AuthorizeRequest = z.infer<typeof authorizeRequestSchema>;

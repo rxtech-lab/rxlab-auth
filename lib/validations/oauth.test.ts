@@ -21,7 +21,7 @@ describe("tokenRequestSchema - client_credentials", () => {
     });
 
     expect(result.success).toBe(true);
-    if (result.success) {
+    if (result.success && result.data.grant_type === "client_credentials") {
       expect(result.data.scope).toBe("read:profile read:email");
     }
   });
@@ -35,13 +35,15 @@ describe("tokenRequestSchema - client_credentials", () => {
     expect(result.success).toBe(false);
   });
 
-  test("should reject client_credentials without client_secret", () => {
+  test("should accept client_credentials without client_secret (validated in route)", () => {
+    // client_secret is optional at validation level to allow proper error handling
+    // (public clients should get unauthorized_client error, not validation error)
     const result = tokenRequestSchema.safeParse({
       grant_type: "client_credentials",
       client_id: "test-client",
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   test("should reject empty client_id", () => {
@@ -90,6 +92,31 @@ describe("tokenRequestSchema - authorization_code", () => {
 
     expect(result.success).toBe(false);
   });
+
+  test("should accept authorization_code without client_secret (public client)", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "authorization_code",
+      code: "test-code",
+      redirect_uri: "https://example.com/callback",
+      code_verifier: "test-verifier",
+      client_id: "test-client",
+      // No client_secret - for public clients
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test("should require code_verifier for PKCE", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "authorization_code",
+      code: "test-code",
+      redirect_uri: "https://example.com/callback",
+      client_id: "test-client",
+      // Missing code_verifier
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("tokenRequestSchema - refresh_token", () => {
@@ -114,9 +141,20 @@ describe("tokenRequestSchema - refresh_token", () => {
     });
 
     expect(result.success).toBe(true);
-    if (result.success) {
+    if (result.success && result.data.grant_type === "refresh_token") {
       expect(result.data.scope).toBe("read:profile");
     }
+  });
+
+  test("should accept refresh_token without client_secret (public client)", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "refresh_token",
+      refresh_token: "test-refresh-token",
+      client_id: "test-client",
+      // No client_secret - for public clients
+    });
+
+    expect(result.success).toBe(true);
   });
 });
 
