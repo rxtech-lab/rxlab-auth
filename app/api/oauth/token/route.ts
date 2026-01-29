@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         body.client_id = basicAuth.clientId;
       }
       if (!body.client_secret) {
-        body.client_secret = basicAuth.clientSecret;
+        body.client_secret = basicAuth.clientSecret!;
       }
     }
 
@@ -71,6 +71,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if public client is trying to use client_credentials grant (not allowed)
+    if (
+      data.grant_type === "client_credentials" &&
+      client.clientType === "public"
+    ) {
+      console.log(
+        "Public client attempted client_credentials grant:",
+        data.client_id,
+      );
+      return NextResponse.json(
+        {
+          error: "unauthorized_client",
+          error_description:
+            "Public clients cannot use client_credentials grant",
+        },
+        { status: 400 },
+      );
+    }
+
     // Determine if client_secret is required based on client type and grant type
     const requiresSecret =
       client.clientType === "confidential" ||
@@ -78,7 +97,10 @@ export async function POST(request: NextRequest) {
 
     if (requiresSecret) {
       if (!data.client_secret) {
-        console.log("Client secret required but not provided for client:", data.client_id);
+        console.log(
+          "Client secret required but not provided for client:",
+          data.client_id,
+        );
         return NextResponse.json(
           {
             error: "invalid_client",
@@ -91,16 +113,25 @@ export async function POST(request: NextRequest) {
       if (!client.secret) {
         console.log("Client secret not set for client:", data.client_id);
         return NextResponse.json(
-          { error: "invalid_client", error_description: "Client configuration error" },
+          {
+            error: "invalid_client",
+            error_description: "Client configuration error",
+          },
           { status: 401 },
         );
       }
 
-      const secretValid = await verifyPassword(client.secret, data.client_secret);
+      const secretValid = await verifyPassword(
+        client.secret,
+        data.client_secret,
+      );
       if (!secretValid) {
         console.log("Invalid client secret for client:", data.client_id);
         return NextResponse.json(
-          { error: "invalid_client", error_description: "Invalid client secret" },
+          {
+            error: "invalid_client",
+            error_description: "Invalid client secret",
+          },
           { status: 401 },
         );
       }
@@ -113,17 +144,6 @@ export async function POST(request: NextRequest) {
       console.log("Handling refresh token grant");
       return handleRefreshTokenGrant(data, client);
     } else if (data.grant_type === "client_credentials") {
-      // Public clients cannot use client_credentials grant
-      if (client.clientType === "public") {
-        console.log("Public client attempted client_credentials grant:", data.client_id);
-        return NextResponse.json(
-          {
-            error: "unauthorized_client",
-            error_description: "Public clients cannot use client_credentials grant",
-          },
-          { status: 400 },
-        );
-      }
       console.log("Handling client credentials grant");
       return handleClientCredentialsGrant(data, client);
     }
@@ -382,7 +402,7 @@ async function handleClientCredentialsGrant(
   data: {
     grant_type: "client_credentials";
     client_id: string;
-    client_secret: string;
+    client_secret?: string;
     scope?: string;
   },
   client: typeof oauthClients.$inferSelect,

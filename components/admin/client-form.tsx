@@ -219,7 +219,7 @@ export function ClientForm({ client }: ClientFormProps) {
                   type="button"
                   variant="outline"
                   size="icon"
-                  onClick={() => handleCopy(credentials.clientSecret, "secret")}
+                  onClick={() => handleCopy(credentials.clientSecret!, "secret")}
                 >
                   {copied === "secret" ? (
                     <Check className="size-4" />

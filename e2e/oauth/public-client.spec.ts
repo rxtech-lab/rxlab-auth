@@ -1,7 +1,16 @@
 import { test, expect } from "@playwright/test";
-import { generateCodeVerifier, generateCodeChallenge } from "@/lib/oauth/pkce";
+import * as crypto from "crypto";
 
 const ADMIN_PASSWORD = "e2e-test-admin-password";
+
+// PKCE helpers
+function generateCodeVerifier(): string {
+  return crypto.randomBytes(32).toString("base64url");
+}
+
+function generateCodeChallenge(verifier: string): string {
+  return crypto.createHash("sha256").update(verifier).digest("base64url");
+}
 
 test.describe("OAuth Public Client Flow", () => {
   let testUser: { email: string; password: string; displayName: string };
@@ -51,8 +60,8 @@ test.describe("OAuth Public Client Flow", () => {
     await page.getByTestId("submit-button").click();
     await expect(page.getByText("Public Client Created")).toBeVisible();
 
-    // Should NOT show client secret
-    await expect(page.getByText("Client Secret")).not.toBeVisible();
+    // Should NOT show client secret input field
+    await expect(page.getByTestId("client-secret-display")).not.toBeVisible();
 
     publicClientId = await page.getByTestId("client-id-display").inputValue();
 

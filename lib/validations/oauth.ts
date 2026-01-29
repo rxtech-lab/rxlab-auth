@@ -32,11 +32,11 @@ export const tokenRequestSchema = z.discriminatedUnion("grant_type", [
     client_secret: z.string().optional(),
     scope: z.string().optional(),
   }),
-  // Client credentials grant (machine-to-machine) - always requires client_secret
+  // Client credentials grant (machine-to-machine) - client_secret validated in route
   z.object({
     grant_type: z.literal("client_credentials"),
     client_id: z.string().min(1, "client_id is required"),
-    client_secret: z.string().min(1, "client_secret is required"),
+    client_secret: z.string().min(1).optional(),
     scope: z.string().optional(),
   }),
 ]);

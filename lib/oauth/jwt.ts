@@ -55,6 +55,7 @@ export async function signAccessToken(
 
   return new jose.SignJWT({ ...payload })
     .setProtectedHeader({ alg: "RS256", kid: getKeyId() })
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setIssuer(issuer)
     .setExpirationTime(expiresIn)
