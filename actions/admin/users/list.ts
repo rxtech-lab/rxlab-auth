@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { desc, lt, or, and, eq, sql } from "drizzle-orm";
+import { desc, lt, or, and, eq, sql, like } from "drizzle-orm";
 import type { User } from "@/lib/db/schema";
 
 export interface PaginatedUsersResult {
@@ -19,6 +19,7 @@ export interface PaginatedUsersResult {
 export interface GetUsersParams {
   cursor?: string;
   limit?: number;
+  search?: string;
 }
 
 interface CursorData {
@@ -52,34 +53,57 @@ export async function getUsers(
 
     const limit = Math.min(params.limit ?? 20, 100);
     const cursorData = params.cursor ? decodeCursor(params.cursor) : null;
+    const searchTerm = params.search?.trim();
 
-    // Get total count
-    const [{ count }] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(users);
+    // Build search condition
+    const searchCondition = searchTerm
+      ? or(
+          like(users.email, `%${searchTerm}%`),
+          like(users.username, `%${searchTerm}%`),
+          like(users.displayName, `%${searchTerm}%`)
+        )
+      : undefined;
 
-    // Build query with cursor condition
-    let query;
-    if (cursorData) {
-      const cursorDate = new Date(cursorData.createdAt);
-      query = db
-        .select()
-        .from(users)
-        .where(
-          or(
-            lt(users.createdAt, cursorDate),
-            and(eq(users.createdAt, cursorDate), lt(users.id, cursorData.id))
+    // Get total count (with search filter if applicable)
+    const countQuery = searchCondition
+      ? db
+          .select({ count: sql<number>`count(*)` })
+          .from(users)
+          .where(searchCondition)
+      : db.select({ count: sql<number>`count(*)` }).from(users);
+
+    const [{ count }] = await countQuery;
+
+    // Build cursor condition
+    const cursorCondition = cursorData
+      ? or(
+          lt(users.createdAt, new Date(cursorData.createdAt)),
+          and(
+            eq(users.createdAt, new Date(cursorData.createdAt)),
+            lt(users.id, cursorData.id)
           )
         )
-        .orderBy(desc(users.createdAt), desc(users.id))
-        .limit(limit + 1);
-    } else {
-      query = db
-        .select()
-        .from(users)
-        .orderBy(desc(users.createdAt), desc(users.id))
-        .limit(limit + 1);
-    }
+      : undefined;
+
+    // Combine conditions
+    const whereCondition =
+      searchCondition && cursorCondition
+        ? and(searchCondition, cursorCondition)
+        : searchCondition || cursorCondition;
+
+    // Build query
+    const query = whereCondition
+      ? db
+          .select()
+          .from(users)
+          .where(whereCondition)
+          .orderBy(desc(users.createdAt), desc(users.id))
+          .limit(limit + 1)
+      : db
+          .select()
+          .from(users)
+          .orderBy(desc(users.createdAt), desc(users.id))
+          .limit(limit + 1);
 
     const userList = await query;
 
