@@ -23,17 +23,24 @@ import {
 import { deleteUser } from "@/actions/admin/users/delete";
 import { adminResendVerificationEmail } from "@/actions/admin/users/resend-verification";
 import { adminSendPasswordReset } from "@/actions/admin/users/send-password-reset";
+import { toggleUserVerified } from "@/actions/admin/users/toggle-verified";
 import type { User } from "@/lib/db/schema";
 
 interface UserRowProps {
   user: User;
   onDeleted: () => void;
+  onVerificationChanged?: (userId: string, verified: boolean) => void;
 }
 
-export function UserRow({ user, onDeleted }: UserRowProps) {
+export function UserRow({
+  user,
+  onDeleted,
+  onVerificationChanged,
+}: UserRowProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(user.emailVerified);
 
   const handleResendVerification = () => {
     if (
@@ -94,6 +101,34 @@ export function UserRow({ user, onDeleted }: UserRowProps) {
     });
   };
 
+  const handleToggleVerified = () => {
+    const action = isVerified ? "unverify" : "verify";
+    if (
+      !confirm(
+        `${action === "verify" ? "Mark" : "Unmark"} "${user.email}" as verified?`
+      )
+    )
+      return;
+
+    setError(null);
+    setSuccess(null);
+
+    startTransition(async () => {
+      const result = await toggleUserVerified(user.id);
+      if (result.success) {
+        const newStatus = result.emailVerified ?? !isVerified;
+        setIsVerified(newStatus);
+        onVerificationChanged?.(user.id, newStatus);
+        setSuccess(
+          `User ${newStatus ? "marked as verified" : "unmarked as verified"}`
+        );
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(result.error || "Failed to update status");
+      }
+    });
+  };
+
   return (
     <div
       className="hover:bg-muted/50 transition-colors"
@@ -144,7 +179,7 @@ export function UserRow({ user, onDeleted }: UserRowProps) {
               )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {!user.emailVerified && (
+              {!isVerified && (
                 <DropdownMenuItem
                   onClick={handleResendVerification}
                   data-testid={`resend-verification-${user.id}`}
@@ -153,7 +188,7 @@ export function UserRow({ user, onDeleted }: UserRowProps) {
                   Resend Verification
                 </DropdownMenuItem>
               )}
-              {user.emailVerified && (
+              {isVerified && (
                 <DropdownMenuItem
                   onClick={handleSendPasswordReset}
                   data-testid={`send-reset-${user.id}`}
@@ -162,6 +197,26 @@ export function UserRow({ user, onDeleted }: UserRowProps) {
                   Send Password Reset
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem
+                onClick={handleToggleVerified}
+                data-testid={
+                  isVerified
+                    ? `unmark-verified-${user.id}`
+                    : `mark-verified-${user.id}`
+                }
+              >
+                {isVerified ? (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Unmark Verified
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Mark Verified
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleDelete}
@@ -175,7 +230,7 @@ export function UserRow({ user, onDeleted }: UserRowProps) {
           </DropdownMenu>
         </div>
         <div className="flex items-center gap-3">
-          {user.emailVerified ? (
+          {isVerified ? (
             <Badge variant="default" className="gap-1">
               <CheckCircle className="h-3 w-3" />
               Verified
@@ -209,7 +264,7 @@ export function UserRow({ user, onDeleted }: UserRowProps) {
 
         {/* Status badge */}
         <div>
-          {user.emailVerified ? (
+          {isVerified ? (
             <Badge variant="default" className="gap-1">
               <CheckCircle className="h-3 w-3" />
               Verified
@@ -247,7 +302,7 @@ export function UserRow({ user, onDeleted }: UserRowProps) {
               )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {!user.emailVerified && (
+              {!isVerified && (
                 <DropdownMenuItem
                   onClick={handleResendVerification}
                   data-testid={`resend-verification-${user.id}`}
@@ -256,7 +311,7 @@ export function UserRow({ user, onDeleted }: UserRowProps) {
                   Resend Verification
                 </DropdownMenuItem>
               )}
-              {user.emailVerified && (
+              {isVerified && (
                 <DropdownMenuItem
                   onClick={handleSendPasswordReset}
                   data-testid={`send-reset-${user.id}`}
@@ -265,6 +320,26 @@ export function UserRow({ user, onDeleted }: UserRowProps) {
                   Send Password Reset
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem
+                onClick={handleToggleVerified}
+                data-testid={
+                  isVerified
+                    ? `unmark-verified-${user.id}`
+                    : `mark-verified-${user.id}`
+                }
+              >
+                {isVerified ? (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Unmark Verified
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Mark Verified
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleDelete}
