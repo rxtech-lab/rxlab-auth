@@ -19,7 +19,7 @@ function RegisterFormFallback() {
 
 function SignUpDisabled() {
   return (
-    <div className="w-full max-w-sm space-y-6 text-center">
+    <div className="w-full max-w-sm space-y-6 text-center" data-testid="signup-disabled-message">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
         <UserX className="h-8 w-8 text-muted-foreground" />
       </div>
