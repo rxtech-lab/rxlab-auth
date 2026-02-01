@@ -2,10 +2,17 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { UserRow } from "@/components/admin/user-row";
 import { UserSearch } from "@/components/admin/user-search";
+import { UserSheet } from "@/components/admin/user-sheet";
 import { getUsers } from "@/actions/admin/users/list";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { User } from "@/lib/db/schema";
@@ -32,6 +39,11 @@ export function UserList({
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [isSearchPending, startSearchTransition] = useTransition();
   const prevDebouncedSearch = useRef(debouncedSearch);
+
+  // Sheet state for create/edit
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<"create" | "edit">("create");
+  const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
 
   // Effect to trigger search when debounced value changes
   useEffect(() => {
@@ -87,18 +99,74 @@ export function UserList({
 
   const handleVerificationChanged = (userId: string, verified: boolean) => {
     setUsers(
-      users.map((u) => (u.id === userId ? { ...u, emailVerified: verified } : u))
+      users.map((u) =>
+        u.id === userId ? { ...u, emailVerified: verified } : u,
+      ),
     );
+  };
+
+  const handleCreateUser = () => {
+    setSheetMode("create");
+    setEditingUser(undefined);
+    setSheetOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setSheetMode("edit");
+    setEditingUser(user);
+    setSheetOpen(true);
+  };
+
+  const handleUserCreated = () => {
+    // Refresh the user list
+    startTransition(async () => {
+      const result = await getUsers({
+        search: debouncedSearch || undefined,
+      });
+      if (result.success && result.data) {
+        setUsers(result.data.users);
+        setCursor(result.data.nextCursor);
+        setTotalCount(result.data.totalCount);
+      }
+    });
+  };
+
+  const handleUserUpdated = (updatedUser?: User) => {
+    if (updatedUser) {
+      setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    }
   };
 
   return (
     <div className="space-y-4" data-testid="user-list">
-      {/* Search */}
-      <UserSearch
-        value={searchQuery}
-        onChange={setSearchQuery}
-        isSearching={isSearchPending}
-      />
+      {/* Action bar */}
+      <div className="flex items-center justify-between">
+        <UserSearch
+          value={searchQuery}
+          onChange={setSearchQuery}
+          isSearching={isSearchPending}
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button data-testid="user-actions-button">
+                <Plus className="h-4 w-4 mr-2" />
+                Actions
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className={"w-48"}>
+            <DropdownMenuItem
+              onClick={handleCreateUser}
+              data-testid="create-user-button"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Create User
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {error && (
         <motion.div
@@ -138,6 +206,7 @@ export function UserList({
                   user={user}
                   onDeleted={() => handleUserDeleted(user.id)}
                   onVerificationChanged={handleVerificationChanged}
+                  onEdit={() => handleEditUser(user)}
                 />
               ))}
             </div>
@@ -167,6 +236,17 @@ export function UserList({
           </div>
         </>
       )}
+
+      {/* User Sheet for create/edit */}
+      <UserSheet
+        mode={sheetMode}
+        user={editingUser}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onSuccess={
+          sheetMode === "create" ? handleUserCreated : handleUserUpdated
+        }
+      />
     </div>
   );
 }

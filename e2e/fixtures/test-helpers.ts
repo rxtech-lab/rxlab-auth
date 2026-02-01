@@ -38,9 +38,9 @@ export async function logoutUser(page: Page) {
 export async function adminLogin(page: Page) {
   await page.goto("/admin");
 
-  // Use the admin password from environment
-  await page.getByLabel("Admin Password").fill(process.env.ADMIN_PASSWORD || "test-admin-password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  // Use the admin password from environment (matches playwright.config.ts)
+  await page.getByLabel("Admin Password").fill(process.env.ADMIN_PASSWORD || "e2e-test-admin-password");
+  await page.getByTestId("admin-login-button").click();
 
   await expect(page).toHaveURL("/admin/dashboard");
 }

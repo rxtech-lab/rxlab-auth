@@ -128,7 +128,7 @@ export function AdminLoginForm() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading} data-testid="admin-login-button">
             {isPending ? (
               <>
                 <Loader2 className="size-4 animate-spin" />

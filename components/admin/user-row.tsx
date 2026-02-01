@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   CheckCircle,
   XCircle,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +31,14 @@ interface UserRowProps {
   user: User;
   onDeleted: () => void;
   onVerificationChanged?: (userId: string, verified: boolean) => void;
+  onEdit?: () => void;
 }
 
 export function UserRow({
   user,
   onDeleted,
   onVerificationChanged,
+  onEdit,
 }: UserRowProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -179,6 +182,13 @@ export function UserRow({
               )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={onEdit}
+                data-testid={`edit-user-${user.id}`}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit User
+              </DropdownMenuItem>
               {!isVerified && (
                 <DropdownMenuItem
                   onClick={handleResendVerification}
@@ -302,6 +312,13 @@ export function UserRow({
               )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={onEdit}
+                data-testid={`edit-user-${user.id}`}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit User
+              </DropdownMenuItem>
               {!isVerified && (
                 <DropdownMenuItem
                   onClick={handleResendVerification}

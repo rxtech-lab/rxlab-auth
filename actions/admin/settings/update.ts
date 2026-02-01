@@ -56,6 +56,7 @@ export async function updateSignUpSettings(
     }
 
     revalidatePath("/admin/dashboard/settings");
+    revalidatePath("/register");
 
     return { success: true };
   } catch (error) {

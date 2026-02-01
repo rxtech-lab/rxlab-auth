@@ -64,3 +64,41 @@ export type UpdateSignUpSettingsInput = z.infer<
   typeof updateSignUpSettingsSchema
 >;
 export type AddWhitelistEmailInput = z.infer<typeof addWhitelistEmailSchema>;
+
+// User management schemas
+export const createUserSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  displayName: z.string().optional(),
+  username: z
+    .string()
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      "Username can only contain letters, numbers, and underscores"
+    )
+    .optional()
+    .nullable(),
+  emailVerified: z.boolean().default(false),
+});
+
+export const updateUserSchema = z.object({
+  email: z.string().email("Please enter a valid email address").optional(),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .optional()
+    .nullable(),
+  displayName: z.string().optional().nullable(),
+  username: z
+    .string()
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      "Username can only contain letters, numbers, and underscores"
+    )
+    .optional()
+    .nullable(),
+  emailVerified: z.boolean().optional(),
+});
+
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
