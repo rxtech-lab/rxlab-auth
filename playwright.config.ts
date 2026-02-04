@@ -68,7 +68,8 @@ export default defineConfig({
 
   webServer: [
     {
-      command: "bun run e2e/mock-oauth-callback-server.ts",
+      command:
+        "lsof -ti:3001 | xargs kill -9 2>/dev/null || true; bun run e2e/mock-oauth-callback-server.ts",
       url: "http://localhost:3001/health",
       timeout: 10 * 1000,
       reuseExistingServer: true,
