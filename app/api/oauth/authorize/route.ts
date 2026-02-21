@@ -20,12 +20,18 @@ function errorResponse(
   request: NextRequest,
   error: string,
   errorDescription: string,
-  status: number
+  status: number,
+  extra?: Record<string, string>
 ): NextResponse {
   if (isBrowserRequest(request)) {
     const errorUrl = new URL("/oauth/error", request.url);
     errorUrl.searchParams.set("error", error);
     errorUrl.searchParams.set("error_description", errorDescription);
+    if (extra) {
+      for (const [key, value] of Object.entries(extra)) {
+        errorUrl.searchParams.set(key, value);
+      }
+    }
     return NextResponse.redirect(errorUrl);
   }
   return NextResponse.json(
@@ -81,7 +87,8 @@ export async function GET(request: NextRequest) {
       request,
       "invalid_redirect_uri",
       `The redirect URI does not match the registered URI: ${redirect_uri}`,
-      400
+      400,
+      { redirect_uri }
     );
   }
 

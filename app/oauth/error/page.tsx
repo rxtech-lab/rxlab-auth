@@ -5,6 +5,7 @@ interface PageProps {
   searchParams: Promise<{
     error?: string;
     error_description?: string;
+    redirect_uri?: string;
   }>;
 }
 
@@ -36,6 +37,11 @@ export default async function OAuthErrorPage({ searchParams }: PageProps) {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-destructive">Authorization Error</h1>
           <p className="text-muted-foreground">{errorDescription}</p>
+          {params.redirect_uri && (
+            <p className="text-sm text-muted-foreground break-all">
+              Redirect URI: <code className="bg-muted px-1.5 py-0.5 rounded">{params.redirect_uri}</code>
+            </p>
+          )}
           <p className="text-sm text-muted-foreground/70">
             Error code: <code className="bg-muted px-1.5 py-0.5 rounded">{error}</code>
           </p>

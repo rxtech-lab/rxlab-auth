@@ -165,6 +165,20 @@ test.describe("OAuth Error Page", () => {
       await expect(page.getByText("access_denied")).toBeVisible();
     });
 
+    test("should display redirect URI for invalid_redirect_uri error", async ({ page }) => {
+      await page.goto(
+        "/oauth/error?error=invalid_redirect_uri&redirect_uri=http%3A%2F%2Fevil.com%2Fcallback"
+      );
+
+      await expect(page.getByText("Authorization Error")).toBeVisible();
+      await expect(
+        page.getByText("redirect URI does not match", { exact: false })
+      ).toBeVisible();
+      await expect(
+        page.getByText("http://evil.com/callback", { exact: false })
+      ).toBeVisible();
+    });
+
     test("should display default message for unknown error", async ({ page }) => {
       await page.goto("/oauth/error?error=some_custom_error");
 
