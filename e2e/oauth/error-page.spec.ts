@@ -67,10 +67,13 @@ test.describe("OAuth Error Page", () => {
       await expect(page).toHaveURL(/\/oauth\/error/);
       expect(page.url()).toContain("error=invalid_redirect_uri");
 
-      // Should display error message
+      // Should display error message with the invalid URI
       await expect(page.getByText("Authorization Error")).toBeVisible();
       await expect(
         page.getByText("redirect URI does not match", { exact: false })
+      ).toBeVisible();
+      await expect(
+        page.getByText("http://evil.com/callback", { exact: false })
       ).toBeVisible();
     });
 

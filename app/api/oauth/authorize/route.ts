@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     return errorResponse(
       request,
       "invalid_redirect_uri",
-      "The redirect URI does not match the registered URI",
+      `The redirect URI does not match the registered URI: ${redirect_uri}`,
       400
     );
   }
