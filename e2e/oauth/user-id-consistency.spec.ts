@@ -50,7 +50,7 @@ test.describe("User ID Consistency", () => {
     await page.goto("/admin/dashboard/clients/new");
     await page.getByLabel("Application Name").fill("User ID Test App");
     await page
-      .getByPlaceholder("https://example.com/callback")
+      .getByTestId("redirect-uri-0")
       .fill("http://localhost:3001/callback");
     await page.getByTestId("profile").click();
     await page.getByTestId("email").click();
