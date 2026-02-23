@@ -325,14 +325,14 @@ export function ClientForm({ client }: ClientFormProps) {
       <div className="space-y-2">
         <Label>Redirect URIs *</Label>
         <p className="text-xs text-muted-foreground">
-          URIs where users will be redirected after authorization
+          URIs where users will be redirected after authorization. Supports * wildcards (e.g. https://*.example.com/callback)
         </p>
         <div className="space-y-2">
           {redirectUris.map((uri, index) => (
             <div key={index} className="flex gap-2">
               <Input
                 data-testid={`redirect-uri-${index}`}
-                placeholder="https://example.com/callback"
+                placeholder="https://*.example.com/callback"
                 value={uri}
                 onChange={(e) => handleRedirectUriChange(index, e.target.value)}
                 disabled={isPending}

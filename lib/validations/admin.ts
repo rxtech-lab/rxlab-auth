@@ -1,6 +1,27 @@
 import { z } from "zod";
 import { SUPPORTED_SCOPES } from "./oauth";
 
+const redirectUriSchema = z
+  .string()
+  .min(1, "Redirect URI cannot be empty")
+  .refine(
+    (val) => {
+      const testVal = val.includes("*")
+        ? val.replace(/\*/g, "WILDCARD_PLACEHOLDER")
+        : val;
+      try {
+        new URL(testVal);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    {
+      message:
+        "Must be a valid URL or URL pattern with * wildcards (e.g. https://*.example.com/callback)",
+    }
+  );
+
 export const adminLoginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
@@ -15,7 +36,7 @@ export const createOAuthClientSchema = z.object({
     .max(256, "Description must be less than 256 characters")
     .optional(),
   redirectUris: z
-    .array(z.string().url("Each redirect URI must be a valid URL"))
+    .array(redirectUriSchema)
     .min(1, "At least one redirect URI is required"),
   allowedScopes: z
     .array(z.enum(SUPPORTED_SCOPES))
@@ -36,7 +57,7 @@ export const updateOAuthClientSchema = z.object({
     .optional()
     .nullable(),
   redirectUris: z
-    .array(z.string().url("Each redirect URI must be a valid URL"))
+    .array(redirectUriSchema)
     .min(1, "At least one redirect URI is required")
     .optional(),
   allowedScopes: z

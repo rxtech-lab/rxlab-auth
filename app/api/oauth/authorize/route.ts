@@ -9,6 +9,7 @@ import {
   parseScopes,
   validateScopes,
 } from "@/lib/validations/oauth";
+import { matchRedirectUri } from "@/lib/oauth/redirect-uri";
 import { eq, and } from "drizzle-orm";
 
 function isBrowserRequest(request: Request): boolean {
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
 
   // Validate redirect URI
   const allowedRedirectUris: string[] = JSON.parse(client.redirectUris);
-  if (!allowedRedirectUris.includes(redirect_uri)) {
+  if (!matchRedirectUri(redirect_uri, allowedRedirectUris)) {
     return errorResponse(
       request,
       "invalid_redirect_uri",
