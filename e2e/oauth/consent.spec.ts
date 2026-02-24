@@ -39,7 +39,7 @@ test.describe("OAuth Consent Flow", () => {
     // Create OAuth client
     await page.goto("/admin/dashboard/clients/new");
     await page.getByLabel("Application Name").fill("Consent Test App");
-    await page.getByPlaceholder("https://example.com/callback").fill("http://localhost:3001/callback");
+    await page.getByTestId("redirect-uri-0").fill("http://localhost:3001/callback");
 
     // Enable profile and email scopes
     await page.getByTestId('profile').click();

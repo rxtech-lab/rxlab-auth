@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth/session";
 import { storeOAuthCode, type OAuthCodeData } from "@/lib/redis";
 import { generateAuthorizationCode } from "@/lib/oauth/jwt";
 import { parseScopes } from "@/lib/validations/oauth";
+import { matchRedirectUri } from "@/lib/oauth/redirect-uri";
 import { eq, and } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
@@ -53,7 +54,7 @@ export async function approveConsent(params: ConsentParams): Promise<ConsentResu
 
     // Validate redirect URI
     const allowedRedirectUris: string[] = JSON.parse(client.redirectUris);
-    if (!allowedRedirectUris.includes(redirectUri)) {
+    if (!matchRedirectUri(redirectUri, allowedRedirectUris)) {
       return { success: false, error: "Invalid redirect URI" };
     }
 

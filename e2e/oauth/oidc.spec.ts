@@ -133,7 +133,7 @@ test.describe("OAuth Token Endpoint", () => {
     // Create a test client
     await page.goto("/admin/dashboard/clients/new");
     await page.getByLabel("Application Name").fill(`E2E Test Client ${testInfo.parallelIndex}`);
-    await page.getByPlaceholder("https://example.com/callback").fill("http://localhost:3001/callback");
+    await page.getByTestId("redirect-uri-0").fill("http://localhost:3001/callback");
     await page.getByRole("button", { name: "Create Application" }).click();
 
     await expect(page.getByText("Client Created Successfully")).toBeVisible();

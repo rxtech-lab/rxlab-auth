@@ -20,7 +20,7 @@ test.describe("OAuth Client Credentials Flow", () => {
     await page.goto("/admin/dashboard/clients/new");
     await page.getByLabel("Application Name").fill("M2M Test App");
     await page
-      .getByPlaceholder("https://example.com/callback")
+      .getByTestId("redirect-uri-0")
       .fill("http://localhost:3001/callback");
 
     // Enable profile and email scopes
