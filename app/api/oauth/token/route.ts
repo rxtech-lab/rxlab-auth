@@ -317,6 +317,7 @@ async function handleRefreshTokenGrant(
   });
 
   if (!storedToken) {
+    console.log("Invalid refresh token for client:", data.client_id);
     return NextResponse.json(
       { error: "invalid_grant", error_description: "Invalid refresh token" },
       { status: 400 },
@@ -325,6 +326,7 @@ async function handleRefreshTokenGrant(
 
   // Check expiration
   if (storedToken.expiresAt && storedToken.expiresAt < new Date()) {
+    console.log("Refresh token expired for client:", data.client_id);
     return NextResponse.json(
       { error: "invalid_grant", error_description: "Refresh token expired" },
       { status: 400 },
@@ -337,6 +339,7 @@ async function handleRefreshTokenGrant(
   });
 
   if (!user) {
+    console.log("User not found for refresh token, client:", data.client_id);
     return NextResponse.json(
       { error: "invalid_grant", error_description: "User not found" },
       { status: 400 },
@@ -350,6 +353,10 @@ async function handleRefreshTokenGrant(
   // Requested scopes must be subset of original scopes
   const validScopes = requestedScopes.every((s) => storedScopes.includes(s));
   if (!validScopes) {
+    console.log(
+      "Requested scopes exceed original grant for client:",
+      data.client_id,
+    );
     return NextResponse.json(
       {
         error: "invalid_scope",
