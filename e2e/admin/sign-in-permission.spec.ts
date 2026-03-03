@@ -24,7 +24,9 @@ test.describe("Client Sign-in Permission", () => {
       await page.goto(`/admin/dashboard/clients/${clientId}`);
 
       // Verify sign-in permission section is visible
-      await expect(page.getByText("Sign-in Permission")).toBeVisible();
+      await expect(
+        page.getByText("Sign-in Permission", { exact: true })
+      ).toBeVisible();
       await expect(
         page.getByTestId("sign-in-permission-all")
       ).toBeVisible();
