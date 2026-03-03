@@ -21,7 +21,7 @@ export function ClientCard({ client }: ClientCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="border rounded-lg p-4 hover:border-primary/50 transition-colors"
+      className="bg-card shadow-sm dark:ring-1 dark:ring-white/5 rounded-2xl p-5 hover:shadow-md transition-all duration-200"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -29,10 +29,10 @@ export function ClientCard({ client }: ClientCardProps) {
             <img
               src={client.iconUrl}
               alt={client.name}
-              className="w-12 h-12 rounded-lg"
+              className="w-12 h-12 rounded-2xl"
             />
           ) : (
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-primary/8 flex items-center justify-center">
               <Shield className="w-6 h-6 text-primary" />
             </div>
           )}

@@ -91,18 +91,18 @@ export function IconUpload({ clientId, currentIconUrl }: IconUploadProps) {
             <img
               src={iconUrl}
               alt="App icon"
-              className="w-20 h-20 rounded-lg object-cover"
+              className="w-20 h-20 rounded-2xl object-cover"
             />
             <button
               onClick={handleRemove}
               disabled={isUploading}
-              className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80"
+              className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-white flex items-center justify-center hover:bg-destructive/80"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         ) : (
-          <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
+          <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center">
             <Shield className="w-8 h-8 text-muted-foreground" />
           </div>
         )}
@@ -143,7 +143,7 @@ export function IconUpload({ clientId, currentIconUrl }: IconUploadProps) {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
+          className="bg-destructive/10 text-destructive text-sm rounded-xl p-3"
         >
           {error}
         </motion.div>

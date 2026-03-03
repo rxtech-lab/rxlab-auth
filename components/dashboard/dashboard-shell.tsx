@@ -29,7 +29,7 @@ export function DashboardShell({
         homeHref={homeHref}
       />
 
-      <div className="container mx-auto flex gap-8 px-4 py-6 sm:px-6 lg:py-8">
+      <div className="container mx-auto flex gap-10 px-4 py-8 sm:px-6 lg:py-10">
         <SidebarNav navItems={navItems} />
         <main className="flex-1 min-w-0">{children}</main>
       </div>

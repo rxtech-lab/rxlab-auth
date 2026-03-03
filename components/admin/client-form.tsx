@@ -164,23 +164,23 @@ export function ClientForm({ client }: ClientFormProps) {
         className="space-y-6"
       >
         {clientType === "public" ? (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+          <div className="bg-primary/8 rounded-xl p-4">
+            <h3 className="font-semibold text-primary mb-2">
               Public Client Created!
             </h3>
-            <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+            <p className="text-sm text-primary/80 mb-2">
               This is a public client. No client secret is generated.
             </p>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+            <p className="text-sm text-primary/80">
               You must use PKCE (Proof Key for Code Exchange) for authorization code flow.
             </p>
           </div>
         ) : (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-            <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+          <div className="bg-green-500/10 rounded-xl p-4">
+            <h3 className="font-semibold text-green-600 dark:text-green-400 mb-2">
               Client Created Successfully!
             </h3>
-            <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+            <p className="text-sm text-green-600/80 dark:text-green-400/80 mb-4">
               Save these credentials now. The client secret will not be shown again.
             </p>
           </div>
@@ -246,7 +246,7 @@ export function ClientForm({ client }: ClientFormProps) {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
+          className="bg-destructive/10 text-destructive text-sm rounded-xl p-3"
         >
           {error}
         </motion.div>
@@ -283,7 +283,7 @@ export function ClientForm({ client }: ClientFormProps) {
           Choose the type of OAuth client based on your application
         </p>
         <div className="flex flex-col gap-3 mt-2">
-          <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+          <label className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 cursor-pointer hover:bg-muted transition-colors">
             <input
               type="radio"
               name="clientType"
@@ -302,7 +302,7 @@ export function ClientForm({ client }: ClientFormProps) {
             </div>
           </label>
 
-          <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+          <label className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 cursor-pointer hover:bg-muted transition-colors">
             <input
               type="radio"
               name="clientType"
@@ -383,7 +383,7 @@ export function ClientForm({ client }: ClientFormProps) {
                 type="button"
                 onClick={() => handleScopeToggle(scope.key)}
                 disabled={isPending || isRequired}
-                className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-colors ${
                   isSelected
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-primary/50"
@@ -417,14 +417,14 @@ export function ClientForm({ client }: ClientFormProps) {
             const isPartiallySelected = isResourcePartiallySelected(resource.key);
 
             return (
-              <div key={resource.key} className="rounded-lg border border-border">
+              <div key={resource.key} className="rounded-xl border border-border">
                 {/* Resource Header */}
                 <button
                   data-testid={resource.key}
                   type="button"
                   onClick={() => handleResourceToggle(resource.key)}
                   disabled={isPending}
-                  className={`w-full flex items-start gap-3 p-3 text-left transition-colors rounded-t-lg ${
+                  className={`w-full flex items-start gap-3 p-3 text-left transition-colors rounded-t-xl ${
                     isFullySelected || isPartiallySelected
                       ? "bg-primary/5"
                       : "hover:bg-muted/50"
@@ -451,7 +451,7 @@ export function ClientForm({ client }: ClientFormProps) {
                 </button>
 
                 {/* Operation Checkboxes */}
-                <div className="border-t border-border bg-muted/30 rounded-b-lg">
+                <div className="border-t border-border bg-muted/30 rounded-b-xl">
                   {resourceScopes.map((scope) => {
                     const isSelected = allowedScopes.includes(scope.key);
                     const op = OPERATIONS[scope.operation!];
@@ -464,7 +464,7 @@ export function ClientForm({ client }: ClientFormProps) {
                         type="button"
                         onClick={() => handleScopeToggle(scope.key)}
                         disabled={isPending}
-                        className={`w-full flex items-center gap-3 px-3 py-2 pl-11 text-left transition-colors last:rounded-b-lg ${
+                        className={`w-full flex items-center gap-3 px-3 py-2 pl-11 text-left transition-colors last:rounded-b-xl ${
                           isSelected ? "bg-primary/5" : "hover:bg-muted/50"
                         } ${isPending ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                       >

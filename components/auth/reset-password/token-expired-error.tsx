@@ -8,13 +8,13 @@ interface TokenExpiredErrorProps {
 
 export function TokenExpiredError({ error }: TokenExpiredErrorProps) {
   return (
-    <div className="w-full max-w-sm space-y-6 text-center">
+    <div className="w-full max-w-sm space-y-8 text-center">
       <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
         <XCircle className="size-8 text-destructive" />
       </div>
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Link expired</h1>
-        <p className="text-muted-foreground text-sm">
+        <h1 className="text-3xl font-semibold tracking-tight">Link expired</h1>
+        <p className="text-muted-foreground text-[15px]">
           {error || "This link has expired or already been used"}
         </p>
       </div>

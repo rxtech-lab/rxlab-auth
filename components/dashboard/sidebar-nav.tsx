@@ -31,7 +31,7 @@ interface SidebarNavProps {
 export function SidebarNav({ navItems }: SidebarNavProps) {
   const currentPath = usePathname();
   return (
-    <aside className="hidden md:flex w-56 shrink-0 flex-col gap-1">
+    <aside className="hidden md:flex w-56 shrink-0 flex-col gap-1 sticky top-24 self-start">
       {navItems.map((item) => {
         const Icon = iconMap[item.iconName] || User;
         const isActive =
@@ -45,13 +45,13 @@ export function SidebarNav({ navItems }: SidebarNavProps) {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
               isActive
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-4.5 w-4.5" />
             {item.label}
           </Link>
         );

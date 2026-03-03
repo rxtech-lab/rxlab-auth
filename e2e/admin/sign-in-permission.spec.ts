@@ -20,8 +20,9 @@ test.describe("Client Sign-in Permission", () => {
         scopes: ["profile"],
       });
 
-      // Navigate to client edit page
+      // Navigate to client edit page and click Permissions tab
       await page.goto(`/admin/dashboard/clients/${clientId}`);
+      await page.getByTestId("tab-permissions").click();
 
       // Verify sign-in permission section is visible
       await expect(
@@ -51,6 +52,7 @@ test.describe("Client Sign-in Permission", () => {
       });
 
       await page.goto(`/admin/dashboard/clients/${clientId}`);
+      await page.getByTestId("tab-permissions").click();
 
       // Change to "None"
       await page.getByTestId("sign-in-permission-none").click();
@@ -61,6 +63,7 @@ test.describe("Client Sign-in Permission", () => {
 
       // Reload and verify persistence
       await page.reload();
+      await page.getByTestId("tab-permissions").click();
       await expect(
         page.getByTestId("sign-in-permission-none")
       ).toBeChecked();
@@ -76,6 +79,7 @@ test.describe("Client Sign-in Permission", () => {
       });
 
       await page.goto(`/admin/dashboard/clients/${clientId}`);
+      await page.getByTestId("tab-permissions").click();
 
       // Initially, whitelist card should be dimmed (opacity-60)
       const whitelistCard = page.getByText("Client Sign-in Whitelist").locator("..");
@@ -104,6 +108,7 @@ test.describe("Client Sign-in Permission", () => {
       });
 
       await page.goto(`/admin/dashboard/clients/${clientId}`);
+      await page.getByTestId("tab-permissions").click();
 
       // Set to whitelist mode
       await page.getByTestId("sign-in-permission-whitelist").click();
@@ -174,6 +179,7 @@ test.describe("Client Sign-in Permission", () => {
 
       // Set permission to none
       await page.goto(`/admin/dashboard/clients/${clientId}`);
+      await page.getByTestId("tab-permissions").click();
       await page.getByTestId("sign-in-permission-none").click();
       await page.getByTestId("save-sign-in-permission").click();
       await expect(
@@ -221,6 +227,7 @@ test.describe("Client Sign-in Permission", () => {
 
       // Set permission to whitelist (without adding user's email)
       await page.goto(`/admin/dashboard/clients/${clientId}`);
+      await page.getByTestId("tab-permissions").click();
       await page.getByTestId("sign-in-permission-whitelist").click();
       await page.getByTestId("save-sign-in-permission").click();
       await expect(
@@ -268,6 +275,7 @@ test.describe("Client Sign-in Permission", () => {
 
       // Set permission to whitelist and add user's email
       await page.goto(`/admin/dashboard/clients/${clientId}`);
+      await page.getByTestId("tab-permissions").click();
       await page.getByTestId("sign-in-permission-whitelist").click();
       await page.getByTestId("save-sign-in-permission").click();
       await expect(

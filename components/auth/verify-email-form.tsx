@@ -58,20 +58,20 @@ export function VerifyEmailForm() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
         className="w-full max-w-sm space-y-6 text-center"
       >
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", delay: 0.2 }}
-          className="mx-auto w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center"
+          className="mx-auto w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center"
         >
           <CheckCircle className="size-8 text-green-600 dark:text-green-400" />
         </motion.div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight">Email verified!</h1>
-          <p className="text-muted-foreground text-sm">
+          <h1 className="text-3xl font-semibold tracking-tight">Email verified!</h1>
+          <p className="text-muted-foreground text-[15px]">
             Your email has been verified. Redirecting you to your account...
           </p>
         </div>
@@ -84,7 +84,7 @@ export function VerifyEmailForm() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
         className="w-full max-w-sm space-y-6 text-center"
       >
         {isPending ? (
@@ -94,7 +94,7 @@ export function VerifyEmailForm() {
           </>
         ) : error ? (
           <>
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3">
+            <div className="bg-destructive/10 text-destructive text-sm rounded-xl p-3.5">
               {error}
             </div>
             <Link href="/login">
@@ -112,15 +112,15 @@ export function VerifyEmailForm() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="w-full max-w-sm space-y-6"
+      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="w-full max-w-sm space-y-8"
     >
       <div className="space-y-2 text-center">
         <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
           <Mail className="size-8 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Check your email</h1>
-        <p className="text-muted-foreground text-sm">
+        <h1 className="text-3xl font-semibold tracking-tight">Check your email</h1>
+        <p className="text-muted-foreground text-[15px]">
           {resendSuccess
             ? "We've sent you a verification link. Please check your inbox."
             : resend
@@ -133,7 +133,7 @@ export function VerifyEmailForm() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
+          className="bg-destructive/10 text-destructive text-sm rounded-xl p-3.5"
         >
           {error}
         </motion.div>
@@ -143,14 +143,14 @@ export function VerifyEmailForm() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 text-sm rounded-lg p-3"
+          className="bg-green-500/10 text-green-600 dark:text-green-400 text-sm rounded-xl p-3.5"
         >
           Verification email sent! Please check your inbox.
         </motion.div>
       )}
 
       {(resend || !sent) && (
-        <form onSubmit={handleResend} className="space-y-4">
+        <form onSubmit={handleResend} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -178,7 +178,7 @@ export function VerifyEmailForm() {
       )}
 
       <p className="text-center text-sm text-muted-foreground">
-        <Link href="/login" className="font-medium text-foreground hover:underline">
+        <Link href="/login" className="text-primary hover:text-primary/80 transition-colors">
           Back to login
         </Link>
       </p>

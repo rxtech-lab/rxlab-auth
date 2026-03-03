@@ -68,17 +68,17 @@ export function PasskeyCard({ passkey }: PasskeyCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="border rounded-lg p-4 space-y-3"
+      className="bg-card shadow-sm dark:ring-1 dark:ring-white/5 rounded-2xl p-5 space-y-3"
     >
       {error && (
-        <div className="bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded p-2">
+        <div className="bg-destructive/10 text-destructive text-xs rounded-xl p-2.5">
           {error}
         </div>
       )}
 
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-2xl bg-primary/8 flex items-center justify-center">
             {isPlatform ? (
               <Smartphone className="w-5 h-5 text-primary" />
             ) : (

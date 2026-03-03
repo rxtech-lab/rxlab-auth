@@ -98,7 +98,7 @@ export function ClientEmailWhitelistCard({
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3 mb-4"
+            className="bg-destructive/10 text-destructive text-sm rounded-xl p-3 mb-4"
           >
             {error}
           </motion.div>
@@ -136,7 +136,7 @@ export function ClientEmailWhitelistCard({
             {emails.map((email) => (
               <div
                 key={email.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted"
+                className="flex items-center justify-between p-3 rounded-xl bg-muted"
                 data-testid={`client-whitelist-email-${email.email}`}
               >
                 <span className="text-sm font-mono">{email.email}</span>

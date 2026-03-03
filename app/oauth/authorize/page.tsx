@@ -30,10 +30,10 @@ export default async function OAuthConsentPage({ searchParams }: PageProps) {
     !params.code_challenge_method
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold text-destructive">Invalid Request</h1>
-          <p className="text-muted-foreground">Missing required parameters</p>
+          <h1 className="text-3xl font-semibold text-destructive">Invalid Request</h1>
+          <p className="text-muted-foreground text-[15px]">Missing required parameters</p>
         </div>
       </div>
     );
@@ -57,10 +57,10 @@ export default async function OAuthConsentPage({ searchParams }: PageProps) {
 
   if (!client) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold text-destructive">Invalid Client</h1>
-          <p className="text-muted-foreground">The requested application was not found</p>
+          <h1 className="text-3xl font-semibold text-destructive">Invalid Client</h1>
+          <p className="text-muted-foreground text-[15px]">The requested application was not found</p>
         </div>
       </div>
     );
@@ -69,7 +69,7 @@ export default async function OAuthConsentPage({ searchParams }: PageProps) {
   const scopes = parseScopes(params.scope);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <OAuthConsentCard
         client={{
           id: client.id,
