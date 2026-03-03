@@ -142,6 +142,7 @@ export function ClientForm({ client }: ClientFormProps) {
           allowedScopes: allowedScopes as ("openid" | "profile" | "email" | "offline_access")[],
           isFirstParty,
           clientType,
+          signInPermission: "all",
         });
         if (result.success && result.clientId) {
           setCredentials({
