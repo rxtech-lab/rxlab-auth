@@ -35,7 +35,7 @@ export default async function ClientsPage({
   searchParams: Promise<{ page?: string; pageSize?: string }>;
 }) {
   const params = await searchParams;
-  const rawPage = Math.max(parseInt(params.page ?? "1", 10) || 1, 1);
+  const requestedPage = Math.max(parseInt(params.page ?? "1", 10) || 1, 1);
   const pageSize = Math.min(
     Math.max(parseInt(params.pageSize ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE, 1),
     100
@@ -46,9 +46,9 @@ export default async function ClientsPage({
     .from(oauthClients);
 
   const totalPages = Math.max(Math.ceil(count / pageSize), 1);
-  const page = Math.min(rawPage, totalPages);
+  const page = Math.min(requestedPage, totalPages);
 
-  if (page !== rawPage) {
+  if (page !== requestedPage) {
     redirect(`/admin/dashboard/clients${buildPageUrl(page, pageSize)}`);
   }
 
