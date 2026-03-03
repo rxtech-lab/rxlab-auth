@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { oauthClients, oauthConsents } from "@/lib/db/schema";
+import { oauthClients, oauthConsents, oauthClientEmailWhitelist, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { storeOAuthCode, type OAuthCodeData } from "@/lib/redis";
 import { generateAuthorizationCode } from "@/lib/oauth/jwt";
@@ -50,6 +50,37 @@ export async function approveConsent(params: ConsentParams): Promise<ConsentResu
 
     if (!client) {
       return { success: false, error: "Invalid client" };
+    }
+
+    // Check sign-in permission
+    if (client.signInPermission === "none") {
+      return { success: false, error: "Sign-in is disabled for this client" };
+    }
+
+    if (client.signInPermission === "whitelist") {
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, session.userId),
+      });
+
+      if (!user) {
+        return { success: false, error: "User not found" };
+      }
+
+      const whitelistEntry =
+        await db.query.oauthClientEmailWhitelist.findFirst({
+          where: and(
+            eq(oauthClientEmailWhitelist.clientId, clientId),
+            eq(oauthClientEmailWhitelist.email, user.email.toLowerCase())
+          ),
+        });
+
+      if (!whitelistEntry) {
+        return {
+          success: false,
+          error:
+            "Your email is not authorized to sign in to this application",
+        };
+      }
     }
 
     // Validate redirect URI

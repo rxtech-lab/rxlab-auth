@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { oauthClients, oauthConsents } from "@/lib/db/schema";
+import { oauthClients, oauthConsents, oauthClientEmailWhitelist, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { storeOAuthCode, type OAuthCodeData } from "@/lib/redis";
 import { generateAuthorizationCode } from "@/lib/oauth/jwt";
@@ -106,6 +106,53 @@ export async function GET(request: NextRequest) {
       `/api/oauth/authorize?${searchParams.toString()}`
     );
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Check sign-in permission
+  if (client.signInPermission === "none") {
+    const redirectUrl = new URL(redirect_uri);
+    redirectUrl.searchParams.set("error", "access_denied");
+    redirectUrl.searchParams.set(
+      "error_description",
+      "Sign-in is disabled for this client"
+    );
+    if (state) redirectUrl.searchParams.set("state", state);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (client.signInPermission === "whitelist") {
+    // Fetch user email
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.userId),
+    });
+
+    if (!user) {
+      const redirectUrl = new URL(redirect_uri);
+      redirectUrl.searchParams.set("error", "access_denied");
+      redirectUrl.searchParams.set("error_description", "User not found");
+      if (state) redirectUrl.searchParams.set("state", state);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Check if user's email is in client whitelist
+    const whitelistEntry =
+      await db.query.oauthClientEmailWhitelist.findFirst({
+        where: and(
+          eq(oauthClientEmailWhitelist.clientId, client_id),
+          eq(oauthClientEmailWhitelist.email, user.email.toLowerCase())
+        ),
+      });
+
+    if (!whitelistEntry) {
+      const redirectUrl = new URL(redirect_uri);
+      redirectUrl.searchParams.set("error", "access_denied");
+      redirectUrl.searchParams.set(
+        "error_description",
+        "Your email is not authorized to sign in to this application"
+      );
+      if (state) redirectUrl.searchParams.set("state", state);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   // Check for existing consent

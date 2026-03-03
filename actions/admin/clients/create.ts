@@ -28,7 +28,7 @@ export async function createOAuthClient(
       };
     }
 
-    const { name, description, redirectUris, allowedScopes, isFirstParty, clientType } = parsed.data;
+    const { name, description, redirectUris, allowedScopes, isFirstParty, clientType, signInPermission } = parsed.data;
 
     // Generate client ID
     const clientId = `client_${crypto.randomUUID().replace(/-/g, "")}`;
@@ -53,6 +53,7 @@ export async function createOAuthClient(
       redirectUris: JSON.stringify(redirectUris),
       allowedScopes: JSON.stringify(allowedScopes),
       isFirstParty: isFirstParty || false,
+      signInPermission: signInPermission || "all",
       createdAt: now,
       updatedAt: now,
     });

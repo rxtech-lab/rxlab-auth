@@ -29,7 +29,7 @@ export async function updateOAuthClient(
       };
     }
 
-    const { name, description, redirectUris, allowedScopes, isFirstParty } = parsed.data;
+    const { name, description, redirectUris, allowedScopes, isFirstParty, signInPermission } = parsed.data;
 
     const updateData: Partial<typeof oauthClients.$inferInsert> = {
       updatedAt: new Date(),
@@ -42,6 +42,8 @@ export async function updateOAuthClient(
     if (allowedScopes !== undefined)
       updateData.allowedScopes = JSON.stringify(allowedScopes);
     if (isFirstParty !== undefined) updateData.isFirstParty = isFirstParty;
+    if (signInPermission !== undefined)
+      updateData.signInPermission = signInPermission;
 
     await db
       .update(oauthClients)
