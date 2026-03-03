@@ -51,44 +51,44 @@ export function OAuthConsentCard({ client, scopes, params }: OAuthConsentCardPro
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="w-full max-w-md"
     >
       <Card>
-        <CardHeader className="text-center space-y-4">
+        <CardHeader className="text-center space-y-4 pb-2">
           <div className="flex justify-center">
             {client.iconUrl ? (
               <img
                 src={client.iconUrl}
                 alt={client.name}
-                className="w-16 h-16 rounded-lg"
+                className="w-20 h-20 rounded-2xl"
               />
             ) : (
-              <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Shield className="w-8 h-8 text-primary" />
+              <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Shield className="w-10 h-10 text-primary" />
               </div>
             )}
           </div>
-          <div>
-            <h1 className="text-xl font-bold">{client.name}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold">{client.name}</h1>
+            <p className="text-[15px] text-muted-foreground">
               wants to access your account
             </p>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           {error && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
+              className="bg-destructive/10 text-destructive text-sm rounded-xl p-3.5"
             >
               {error}
             </motion.div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p className="text-sm font-medium">This will allow {client.name} to:</p>
             <ul className="space-y-2">
               {scopes.map((scope) => {
@@ -100,7 +100,7 @@ export function OAuthConsentCard({ client, scopes, params }: OAuthConsentCardPro
                     key={scope}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-start gap-3 p-2 rounded-lg bg-muted/50"
+                    className="flex items-start gap-3 p-3 rounded-xl bg-muted/50"
                   >
                     <Icon className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>

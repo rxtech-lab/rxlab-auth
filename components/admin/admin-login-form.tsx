@@ -55,15 +55,15 @@ export function AdminLoginForm() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="w-full max-w-sm space-y-6"
+      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="w-full max-w-sm space-y-8"
     >
-      <div className="space-y-2 text-center">
-        <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+      <div className="space-y-3 text-center">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Shield className="size-8 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Admin Access</h1>
-        <p className="text-muted-foreground text-sm">
+        <h1 className="text-3xl font-semibold tracking-tight">Admin Access</h1>
+        <p className="text-muted-foreground text-[15px]">
           Sign in with passkey or password
         </p>
       </div>
@@ -72,13 +72,13 @@ export function AdminLoginForm() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
+          className="bg-destructive/10 text-destructive text-sm rounded-xl p-3.5"
         >
           {displayError}
         </motion.div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         <Button
           type="button"
           variant="outline"
@@ -104,28 +104,24 @@ export function AdminLoginForm() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
+            <span className="bg-background px-3 text-muted-foreground">
+              or
             </span>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="password">Admin Password</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter admin password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                className="pl-10"
-              />
-            </div>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter admin password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoading}
+            />
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading} data-testid="admin-login-button">

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/actions/auth/logout";
 import { LogOut } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { eq } from "drizzle-orm";
 
 const navItems: NavItem[] = [
@@ -51,6 +52,8 @@ export default async function AccountLayout({
   }
 
   const headerRight = (
+    <>
+    <ThemeToggle />
     <DropdownMenu>
       <DropdownMenuTrigger className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
         <Image
@@ -82,6 +85,7 @@ export default async function AccountLayout({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   );
 
   return (

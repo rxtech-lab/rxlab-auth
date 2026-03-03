@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,14 +31,14 @@ export function RequestResetForm() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="w-full max-w-sm space-y-6"
+      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="w-full max-w-sm space-y-8"
     >
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight">
           Forgot your password?
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-[15px]">
           Enter your email and we&apos;ll send you a reset link
         </p>
       </div>
@@ -47,28 +47,24 @@ export function RequestResetForm() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
+          className="bg-destructive/10 text-destructive text-sm rounded-xl p-3.5"
         >
           {error}
         </motion.div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isPending}
-              className="pl-10"
-            />
-          </div>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={isPending}
+          />
         </div>
 
         <Button
@@ -91,7 +87,7 @@ export function RequestResetForm() {
       <p className="text-center text-sm text-muted-foreground">
         <Link
           href="/login"
-          className="font-medium text-foreground hover:underline"
+          className="text-primary hover:text-primary/80 transition-colors"
         >
           Back to login
         </Link>

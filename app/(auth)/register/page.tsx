@@ -19,15 +19,15 @@ function RegisterFormFallback() {
 
 function SignUpDisabled() {
   return (
-    <div className="w-full max-w-sm space-y-6 text-center" data-testid="signup-disabled-message">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+    <div className="w-full max-w-sm space-y-8 text-center" data-testid="signup-disabled-message">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
         <UserX className="h-8 w-8 text-muted-foreground" />
       </div>
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight">
           Sign-up is disabled
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-[15px]">
           New account registration is currently not available. Please contact an
           administrator if you need access.
         </p>
@@ -36,7 +36,7 @@ function SignUpDisabled() {
         Already have an account?{" "}
         <Link
           href="/login"
-          className="font-medium text-foreground hover:underline"
+          className="text-primary hover:text-primary/80 transition-colors"
         >
           Sign in
         </Link>

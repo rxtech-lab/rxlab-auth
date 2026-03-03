@@ -51,7 +51,7 @@ export function MobileNav({ navItems, title, logo }: MobileNavProps) {
         <span className="sr-only">Toggle menu</span>
       </SheetTrigger>
       <SheetContent side="left" className="w-72 p-0" showCloseButton={false}>
-        <SheetHeader className="border-b px-4 py-4">
+        <SheetHeader className="shadow-[0_1px_0_rgba(0,0,0,0.06)] dark:shadow-[0_1px_0_rgba(255,255,255,0.06)] px-5 py-4">
           <SheetTitle className="flex items-center gap-2">
             {logo}
             <span>{title}</span>
@@ -72,13 +72,13 @@ export function MobileNav({ navItems, title, logo }: MobileNavProps) {
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
                   isActive
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4.5 w-4.5" />
                 {item.label}
               </Link>
             );

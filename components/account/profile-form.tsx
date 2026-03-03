@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Save, User } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,7 +50,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
+          className="bg-destructive/10 text-destructive text-sm rounded-xl p-3"
         >
           {error}
         </motion.div>
@@ -60,17 +60,17 @@ export function ProfileForm({ user }: ProfileFormProps) {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 text-sm rounded-lg p-3"
+          className="bg-green-500/10 text-green-600 dark:text-green-400 text-sm rounded-xl p-3"
         >
           Profile updated successfully!
         </motion.div>
       )}
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-5">
         <img
           src={`/api/avatar/${user.avatarSeed || user.email}`}
           alt="Avatar"
-          className="w-20 h-20 rounded-full"
+          className="w-24 h-24 rounded-full"
         />
         <div>
           <p className="text-sm text-muted-foreground">
@@ -95,36 +95,26 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="displayName">Display Name</Label>
-        <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            id="displayName"
-            type="text"
-            placeholder="Your display name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            disabled={isPending}
-            className="pl-10"
-          />
-        </div>
+        <Input
+          id="displayName"
+          type="text"
+          placeholder="Your display name"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          disabled={isPending}
+        />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="username">Username</Label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-            @
-          </span>
-          <Input
-            id="username"
-            type="text"
-            placeholder="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            disabled={isPending}
-            className="pl-8"
-          />
-        </div>
+        <Input
+          id="username"
+          type="text"
+          placeholder="@username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          disabled={isPending}
+        />
         <p className="text-xs text-muted-foreground">
           Letters, numbers, underscores, and hyphens only
         </p>

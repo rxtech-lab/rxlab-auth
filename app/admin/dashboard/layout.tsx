@@ -5,6 +5,7 @@ import { DashboardShell, type NavItem } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { adminLogout } from "@/actions/admin/logout";
 import { Shield, LogOut, Users } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems: NavItem[] = [
   { href: "/admin/dashboard", label: "Overview", iconName: "LayoutDashboard" },
@@ -26,12 +27,15 @@ export default async function AdminDashboardLayout({
   }
 
   const headerRight = (
-    <form action={adminLogout}>
-      <Button type="submit" variant="ghost" size="sm">
-        <LogOut className="h-4 w-4" />
-        <span className="hidden sm:inline-block">Sign out</span>
-      </Button>
-    </form>
+    <>
+      <ThemeToggle />
+      <form action={adminLogout}>
+        <Button type="submit" variant="ghost" size="sm">
+          <LogOut className="h-4 w-4" />
+          <span className="hidden sm:inline-block">Sign out</span>
+        </Button>
+      </form>
+    </>
   );
 
   return (

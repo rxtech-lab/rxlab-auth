@@ -71,7 +71,7 @@ export function ClientDangerZone({ clientId, clientName }: ClientDangerZoneProps
   };
 
   return (
-    <Card className="border-destructive/50">
+    <Card className="ring-1 ring-destructive/20">
       <CardHeader>
         <CardTitle className="text-destructive flex items-center gap-2">
           <AlertTriangle className="w-5 h-5" />
@@ -86,7 +86,7 @@ export function ClientDangerZone({ clientId, clientName }: ClientDangerZoneProps
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
+            className="bg-destructive/10 text-destructive text-sm rounded-xl p-3"
           >
             {error}
           </motion.div>
@@ -96,16 +96,16 @@ export function ClientDangerZone({ clientId, clientName }: ClientDangerZoneProps
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4"
+            className="bg-amber-500/10 rounded-xl p-4"
           >
-            <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
+            <p className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-2">
               New Client Secret Generated
             </p>
-            <p className="text-xs text-amber-700 dark:text-amber-300 mb-3">
+            <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mb-3">
               Save this secret now. It will not be shown again.
             </p>
             <div className="flex gap-2">
-              <code className="flex-1 p-2 bg-white dark:bg-black/20 rounded text-xs font-mono break-all">
+              <code className="flex-1 p-2.5 bg-white dark:bg-black/20 rounded-lg text-xs font-mono break-all">
                 {newSecret}
               </code>
               <Button variant="outline" size="icon" onClick={handleCopy}>

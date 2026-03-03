@@ -69,7 +69,7 @@ export function SignInPermissionCard({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
+              className="bg-destructive/10 text-destructive text-sm rounded-xl p-3"
             >
               {error}
             </motion.div>
@@ -79,14 +79,14 @@ export function SignInPermissionCard({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-sm rounded-lg p-3"
+              className="bg-green-500/10 text-green-600 dark:text-green-400 text-sm rounded-xl p-3"
             >
               Sign-in permission saved successfully
             </motion.div>
           )}
 
           <div className="space-y-3">
-            <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <label className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 cursor-pointer hover:bg-muted transition-colors">
               <input
                 type="radio"
                 name="signInPermission"
@@ -105,7 +105,7 @@ export function SignInPermissionCard({
               </div>
             </label>
 
-            <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <label className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 cursor-pointer hover:bg-muted transition-colors">
               <input
                 type="radio"
                 name="signInPermission"
@@ -125,7 +125,7 @@ export function SignInPermissionCard({
               </div>
             </label>
 
-            <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <label className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 cursor-pointer hover:bg-muted transition-colors">
               <input
                 type="radio"
                 name="signInPermission"

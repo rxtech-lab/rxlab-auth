@@ -26,18 +26,18 @@ export default async function OAuthErrorPage({ searchParams }: PageProps) {
     params.error_description || errorMessages[error] || "An unexpected error occurred.";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="text-center space-y-6 max-w-md">
         <div className="flex justify-center">
-          <div className="rounded-full bg-destructive/10 p-4">
-            <AlertCircle className="h-12 w-12 text-destructive" />
+          <div className="rounded-2xl bg-destructive/10 p-5">
+            <AlertCircle className="h-10 w-10 text-destructive" />
           </div>
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-destructive">Authorization Error</h1>
-          <p className="text-muted-foreground">{errorDescription}</p>
-          <p className="text-sm text-muted-foreground/70">
-            Error code: <code className="bg-muted px-1.5 py-0.5 rounded">{error}</code>
+          <h1 className="text-3xl font-semibold text-destructive">Authorization Error</h1>
+          <p className="text-muted-foreground text-[15px]">{errorDescription}</p>
+          <p className="text-sm text-muted-foreground">
+            Error code: <code className="bg-muted px-2 py-1 rounded-lg text-xs">{error}</code>
           </p>
         </div>
         <BackButton />

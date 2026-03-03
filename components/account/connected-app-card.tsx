@@ -52,10 +52,10 @@ export function ConnectedAppCard({ consent }: ConnectedAppCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="border rounded-lg p-4 space-y-3"
+      className="bg-card shadow-sm dark:ring-1 dark:ring-white/5 rounded-2xl p-5 space-y-4"
     >
       {error && (
-        <div className="bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded p-2">
+        <div className="bg-destructive/10 text-destructive text-xs rounded-xl p-2.5">
           {error}
         </div>
       )}
@@ -66,10 +66,10 @@ export function ConnectedAppCard({ consent }: ConnectedAppCardProps) {
             <img
               src={consent.client.iconUrl}
               alt={consent.client.name}
-              className="w-12 h-12 rounded-lg"
+              className="w-12 h-12 rounded-2xl"
             />
           ) : (
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-primary/8 flex items-center justify-center">
               <Shield className="w-6 h-6 text-primary" />
             </div>
           )}
