@@ -14,6 +14,7 @@ import type { OAuthClientEmailWhitelist } from "@/lib/db/schema";
 export interface ClientWhitelistResult {
   success: boolean;
   error?: string;
+  id?: string;
 }
 
 export interface GetClientWhitelistResult {
@@ -78,8 +79,9 @@ export async function addClientWhitelistEmail(
       };
     }
 
+    const id = crypto.randomUUID();
     await db.insert(oauthClientEmailWhitelist).values({
-      id: crypto.randomUUID(),
+      id,
       clientId,
       email,
       createdAt: new Date(),
@@ -87,7 +89,7 @@ export async function addClientWhitelistEmail(
 
     revalidatePath(`/admin/dashboard/clients/${clientId}`);
 
-    return { success: true };
+    return { success: true, id };
   } catch (error) {
     console.error("Add client whitelist error:", error);
     return {

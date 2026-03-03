@@ -47,10 +47,10 @@ export function ClientEmailWhitelistCard({
         clientId,
       });
 
-      if (result.success) {
+      if (result.success && result.id) {
         setEmails([
           {
-            id: crypto.randomUUID(),
+            id: result.id,
             clientId,
             email: newEmail.toLowerCase(),
             createdAt: new Date(),
