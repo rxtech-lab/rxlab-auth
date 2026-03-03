@@ -43,6 +43,7 @@ export const createOAuthClientSchema = z.object({
     .min(1, "At least one scope is required"),
   isFirstParty: z.boolean().optional().default(false),
   clientType: z.enum(["public", "confidential"]).default("confidential"),
+  signInPermission: z.enum(["all", "none", "whitelist"]).default("all"),
 });
 
 export const updateOAuthClientSchema = z.object({
@@ -65,6 +66,7 @@ export const updateOAuthClientSchema = z.object({
     .min(1, "At least one scope is required")
     .optional(),
   isFirstParty: z.boolean().optional(),
+  signInPermission: z.enum(["all", "none", "whitelist"]).optional(),
 });
 
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
@@ -81,10 +83,18 @@ export const addWhitelistEmailSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
 
+export const addClientWhitelistEmailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  clientId: z.string().min(1, "Client ID is required"),
+});
+
 export type UpdateSignUpSettingsInput = z.infer<
   typeof updateSignUpSettingsSchema
 >;
 export type AddWhitelistEmailInput = z.infer<typeof addWhitelistEmailSchema>;
+export type AddClientWhitelistEmailInput = z.infer<
+  typeof addClientWhitelistEmailSchema
+>;
 
 // User management schemas
 export const createUserSchema = z.object({

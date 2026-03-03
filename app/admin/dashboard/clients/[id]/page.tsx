@@ -1,10 +1,11 @@
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { oauthClients } from "@/lib/db/schema";
+import { oauthClients, oauthClientEmailWhitelist } from "@/lib/db/schema";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ClientForm } from "@/components/admin/client-form";
 import { IconUpload } from "@/components/admin/icon-upload";
 import { ClientDangerZone } from "@/components/admin/client-danger-zone";
+import { ClientSignInSettings } from "@/components/admin/client-sign-in-settings";
 import { eq } from "drizzle-orm";
 
 interface PageProps {
@@ -37,6 +38,11 @@ export default async function EditClientPage({ params }: PageProps) {
   if (!client) {
     notFound();
   }
+
+  const whitelistEmails = await db.query.oauthClientEmailWhitelist.findMany({
+    where: eq(oauthClientEmailWhitelist.clientId, id),
+    orderBy: (table, { desc }) => [desc(table.createdAt)],
+  });
 
   return (
     <div className="space-y-6">
@@ -76,6 +82,12 @@ export default async function EditClientPage({ params }: PageProps) {
           />
         </CardContent>
       </Card>
+
+      <ClientSignInSettings
+        clientId={client.id}
+        initialPermission={client.signInPermission as "all" | "none" | "whitelist"}
+        initialEmails={whitelistEmails}
+      />
 
       <ClientDangerZone clientId={client.id} clientName={client.name} />
     </div>
