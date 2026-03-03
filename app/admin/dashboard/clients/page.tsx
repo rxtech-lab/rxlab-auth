@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { oauthClients } from "@/lib/db/schema";
 import { desc, sql } from "drizzle-orm";
@@ -21,11 +22,7 @@ export const metadata = {
 
 const DEFAULT_PAGE_SIZE = 20;
 
-function buildPageUrl(
-  currentParams: { page?: string; pageSize?: string },
-  page: number,
-  pageSize: number
-) {
+function buildPageUrl(page: number, pageSize: number) {
   const params = new URLSearchParams();
   params.set("page", String(page));
   params.set("pageSize", String(pageSize));
@@ -38,18 +35,24 @@ export default async function ClientsPage({
   searchParams: Promise<{ page?: string; pageSize?: string }>;
 }) {
   const params = await searchParams;
-  const page = Math.max(parseInt(params.page ?? "1", 10) || 1, 1);
+  const rawPage = Math.max(parseInt(params.page ?? "1", 10) || 1, 1);
   const pageSize = Math.min(
     Math.max(parseInt(params.pageSize ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE, 1),
     100
   );
-  const offset = (page - 1) * pageSize;
 
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(oauthClients);
 
   const totalPages = Math.max(Math.ceil(count / pageSize), 1);
+  const page = Math.min(rawPage, totalPages);
+
+  if (page !== rawPage) {
+    redirect(`/admin/dashboard/clients${buildPageUrl(page, pageSize)}`);
+  }
+
+  const offset = (page - 1) * pageSize;
 
   const clients = await db
     .select()
@@ -114,7 +117,7 @@ export default async function ClientsPage({
                     </div>
                     <div className="flex items-center gap-1">
                       <Link
-                        href={buildPageUrl(params, 1, pageSize)}
+                        href={buildPageUrl(1, pageSize)}
                         aria-disabled={!hasPrev}
                         tabIndex={hasPrev ? 0 : -1}
                         className={!hasPrev ? "pointer-events-none" : ""}
@@ -129,7 +132,7 @@ export default async function ClientsPage({
                         </Button>
                       </Link>
                       <Link
-                        href={buildPageUrl(params, page - 1, pageSize)}
+                        href={buildPageUrl(page - 1, pageSize)}
                         aria-disabled={!hasPrev}
                         tabIndex={hasPrev ? 0 : -1}
                         className={!hasPrev ? "pointer-events-none" : ""}
@@ -150,7 +153,7 @@ export default async function ClientsPage({
                         Page {page} of {totalPages}
                       </span>
                       <Link
-                        href={buildPageUrl(params, page + 1, pageSize)}
+                        href={buildPageUrl(page + 1, pageSize)}
                         aria-disabled={!hasNext}
                         tabIndex={hasNext ? 0 : -1}
                         className={!hasNext ? "pointer-events-none" : ""}
@@ -165,7 +168,7 @@ export default async function ClientsPage({
                         </Button>
                       </Link>
                       <Link
-                        href={buildPageUrl(params, totalPages, pageSize)}
+                        href={buildPageUrl(totalPages, pageSize)}
                         aria-disabled={!hasNext}
                         tabIndex={hasNext ? 0 : -1}
                         className={!hasNext ? "pointer-events-none" : ""}
