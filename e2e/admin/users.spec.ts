@@ -1,14 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { registerUser } from "../fixtures/test-helpers";
-
-const ADMIN_PASSWORD = "e2e-test-admin-password";
-
-async function adminLogin(page: import("@playwright/test").Page) {
-  await page.goto("/admin");
-  await page.getByLabel("Admin Password").fill(ADMIN_PASSWORD);
-  await page.getByRole("button", { name: "Sign in with Password" }).click();
-  await expect(page).toHaveURL("/admin/dashboard");
-}
+import { adminLogin, registerUser } from "../fixtures/test-helpers";
 
 // Create unique test users for each test run
 function createTestUser(testId: string) {
@@ -137,7 +128,9 @@ test.describe("Toggle User Verification", () => {
     // Search for our test user to find them easily
     const searchInput = page.getByTestId("user-search-input");
     await searchInput.fill(testUser.email);
-    await page.waitForTimeout(500);
+
+    // Wait for search results to settle - ensure our test user's row is visible
+    await expect(page.getByText(testUser.email).last()).toBeVisible();
   });
 
   test("should show toggle verified option in actions menu", async ({
@@ -153,19 +146,12 @@ test.describe("Toggle User Verification", () => {
     // Open actions menu (use last() to get desktop layout which is visible)
     await page.getByTestId(`user-actions-${userId}`).last().click();
 
-    await page.waitForTimeout(2000);
-
     // Should show either "Mark Verified" or "Unmark Verified" based on current state
     const markVerified = page.getByTestId(`mark-verified-${userId}`);
     const unmarkVerified = page.getByTestId(`unmark-verified-${userId}`);
 
-    const hasMarkVerified = await markVerified.isVisible().catch(() => false);
-    const hasUnmarkVerified = await unmarkVerified
-      .isVisible()
-      .catch(() => false);
-
-    // One of them should be visible
-    expect(hasMarkVerified || hasUnmarkVerified).toBe(true);
+    // Wait for one of the toggle options to appear in the dropdown
+    await expect(markVerified.or(unmarkVerified)).toBeVisible();
   });
 
   test("should toggle verification status", async ({ page }) => {
@@ -182,15 +168,24 @@ test.describe("Toggle User Verification", () => {
     // Open actions menu (use last() to get desktop layout which is visible)
     await page.getByTestId(`user-actions-${userId}`).last().click();
 
-    // Click the toggle action
+    // Determine current state and click the appropriate toggle
+    const markVerified = page.getByTestId(`mark-verified-${userId}`);
+    const unmarkVerified = page.getByTestId(`unmark-verified-${userId}`);
+    await expect(markVerified.or(unmarkVerified)).toBeVisible();
 
-    await page.getByTestId(`unmark-verified-${userId}`).click();
+    const isCurrentlyVerified = await unmarkVerified
+      .isVisible()
+      .catch(() => false);
 
-    // Wait for the action to complete
-    await page.waitForTimeout(2000);
-
-    // Should now show Unverified badge
-    await expect(page.getByText("Unverified").nth(1)).toBeVisible();
+    if (isCurrentlyVerified) {
+      await unmarkVerified.click();
+      // Should now show Unverified badge
+      await expect(page.getByText("Unverified").last()).toBeVisible();
+    } else {
+      await markVerified.click();
+      // Should now show Verified badge
+      await expect(page.getByText("Verified").last()).toBeVisible();
+    }
   });
 
   test("should update actions menu after toggle", async ({ page }) => {
@@ -201,35 +196,45 @@ test.describe("Toggle User Verification", () => {
       "",
     );
 
+    // Accept the confirmation dialog before clicking
+    page.on("dialog", (dialog) => dialog.accept());
+
+    // Open actions menu to determine current state (use last() to get desktop layout which is visible)
+    await page.getByTestId(`user-actions-${userId}`).last().click();
+
+    const markVerified = page.getByTestId(`mark-verified-${userId}`);
     const unmarkVerified = page.getByTestId(`unmark-verified-${userId}`);
+    await expect(markVerified.or(unmarkVerified)).toBeVisible();
+
     const isCurrentlyVerified = await unmarkVerified
       .isVisible()
       .catch(() => false);
 
-    // Accept the confirmation dialog before clicking
-    page.on("dialog", (dialog) => dialog.accept());
-
-    // Open actions menu (use last() to get desktop layout which is visible)
-    await page.getByTestId(`user-actions-${userId}`).last().click();
-
-    if (!isCurrentlyVerified) {
-      // If currently unverified, click "Mark Verified"
-      await page.getByTestId(`mark-verified-${userId}`).click();
+    if (isCurrentlyVerified) {
+      await unmarkVerified.click();
     } else {
-      // Click the toggle action
-      await page.getByTestId(`unmark-verified-${userId}`).click();
+      await markVerified.click();
     }
-    // Wait for the action to complete
-    await page.waitForTimeout(2000);
+
+    // Wait for the toggle action to complete by checking for the success message
+    await expect(
+      page.getByText(/User (marked|unmarked) as verified/),
+    ).toBeVisible();
+
+    // Refresh and search again so we assert against the updated row/menu state.
+    await page.reload();
+    const searchInput = page.getByTestId("user-search-input");
+    await searchInput.fill(testUser.email);
+    await expect(page.getByText(testUser.email).last()).toBeVisible();
 
     // Open actions menu again (use last() to get desktop layout which is visible)
     await page.getByTestId(`user-actions-${userId}`).last().click();
 
     if (isCurrentlyVerified) {
-      // The toggle action should now show "Mark Verified"
+      // Was verified, now should be unverified → show "Mark Verified"
       await expect(page.getByTestId(`mark-verified-${userId}`)).toBeVisible();
     } else {
-      // The toggle action should now show "Unmark Verified"
+      // Was unverified, now should be verified → show "Unmark Verified"
       await expect(page.getByTestId(`unmark-verified-${userId}`)).toBeVisible();
     }
   });

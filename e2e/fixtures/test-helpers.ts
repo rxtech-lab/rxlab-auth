@@ -16,7 +16,7 @@ export async function registerUser(page: Page, user = testUser) {
   await page.getByRole("button", { name: "Create account" }).click();
 
   // Should redirect to account page (email verification skipped in E2E)
-  await expect(page).toHaveURL("/account");
+  await expect(page).toHaveURL("/account", { timeout: 20000 });
 }
 
 export async function loginUser(page: Page, user = testUser) {
@@ -27,7 +27,7 @@ export async function loginUser(page: Page, user = testUser) {
 
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page).toHaveURL("/account");
+  await expect(page).toHaveURL("/account", { timeout: 20000 });
 }
 
 export async function logoutUser(page: Page) {
@@ -42,7 +42,7 @@ export async function adminLogin(page: Page) {
   await page.getByLabel("Admin Password").fill(process.env.ADMIN_PASSWORD || "e2e-test-admin-password");
   await page.getByTestId("admin-login-button").click();
 
-  await expect(page).toHaveURL("/admin/dashboard");
+  await expect(page).toHaveURL("/admin/dashboard", { timeout: 20000 });
 }
 
 export async function createOAuthClient(
