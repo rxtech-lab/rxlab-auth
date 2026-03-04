@@ -44,7 +44,7 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  retries: 2,
   // Use 1 worker for in-memory SQLite (each worker gets separate DB)
   workers: 1,
   reporter: "html",

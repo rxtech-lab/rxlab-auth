@@ -1,13 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-const ADMIN_PASSWORD = "e2e-test-admin-password";
-
-async function adminLogin(page: import("@playwright/test").Page) {
-  await page.goto("/admin");
-  await page.getByLabel("Admin Password").fill(ADMIN_PASSWORD);
-  await page.getByRole("button", { name: "Sign in with Password" }).click();
-  await expect(page).toHaveURL("/admin/dashboard");
-}
+import { adminLogin } from "../fixtures/test-helpers";
 
 test.describe("OAuth Endpoints Display", () => {
   test.beforeEach(async ({ page }) => {
