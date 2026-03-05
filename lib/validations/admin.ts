@@ -6,9 +6,13 @@ const redirectUriSchema = z
   .min(1, "Redirect URI cannot be empty")
   .refine(
     (val) => {
-      const testVal = val.includes("*")
-        ? val.replace(/\*/g, "WILDCARD_PLACEHOLDER")
-        : val;
+      let testVal = val;
+      if (testVal.includes("*")) {
+        // Replace wildcard in port position with numeric placeholder first,
+        // then replace remaining wildcards with string placeholder.
+        testVal = testVal.replace(/:(\*)/g, ":1234");
+        testVal = testVal.replace(/\*/g, "WILDCARD_PLACEHOLDER");
+      }
       try {
         new URL(testVal);
         return true;

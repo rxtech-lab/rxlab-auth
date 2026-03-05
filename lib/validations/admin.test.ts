@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { createUserSchema, updateUserSchema } from "./admin";
+import {
+  createOAuthClientSchema,
+  createUserSchema,
+  updateUserSchema,
+} from "./admin";
 
 describe("createUserSchema", () => {
   test("should accept valid user with all fields", () => {
@@ -173,5 +177,61 @@ describe("updateUserSchema", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+});
+
+describe("createOAuthClientSchema redirect URI validation", () => {
+  const baseClient = {
+    name: "Test Client",
+    allowedScopes: ["openid"],
+    clientType: "confidential" as const,
+  };
+
+  test("should accept standard redirect URI", () => {
+    const result = createOAuthClientSchema.safeParse({
+      ...baseClient,
+      redirectUris: ["https://example.com/callback"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("should accept wildcard subdomain redirect URI", () => {
+    const result = createOAuthClientSchema.safeParse({
+      ...baseClient,
+      redirectUris: ["https://*.example.com/callback"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("should accept localhost with wildcard port", () => {
+    const result = createOAuthClientSchema.safeParse({
+      ...baseClient,
+      redirectUris: ["http://localhost:*/oauth/callback"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("should accept localhost with wildcard port and simple path", () => {
+    const result = createOAuthClientSchema.safeParse({
+      ...baseClient,
+      redirectUris: ["http://localhost:*/callback"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("should accept wildcard in both subdomain and port", () => {
+    const result = createOAuthClientSchema.safeParse({
+      ...baseClient,
+      redirectUris: ["http://*.localhost:*/callback"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("should reject invalid URI", () => {
+    const result = createOAuthClientSchema.safeParse({
+      ...baseClient,
+      redirectUris: ["not-a-url"],
+    });
+    expect(result.success).toBe(false);
   });
 });

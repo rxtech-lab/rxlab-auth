@@ -211,3 +211,89 @@ test.describe("OAuth Wildcard Redirect URI", () => {
     expect(tokens.expires_in).toBe(3600);
   });
 });
+
+test.describe("OAuth Wildcard Port Redirect URI", () => {
+  let portWildcardClientId: string;
+
+  test.beforeAll(async ({ browser }, testInfo) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    // Login as admin and create OAuth client with wildcard port redirect URI
+    await page.goto("/admin");
+    await page.getByLabel("Admin Password").fill(ADMIN_PASSWORD);
+    await page
+      .getByRole("button", { name: "Sign in with Password", exact: true })
+      .click();
+    await expect(page).toHaveURL("/admin/dashboard");
+
+    await page.goto("/admin/dashboard/clients/new");
+    await page
+      .getByTestId("client-name")
+      .fill(`Port Wildcard Client ${testInfo.parallelIndex}`);
+    await page.getByTestId("client-type-public").click();
+
+    // Enter wildcard port redirect URI pattern — this was previously rejected
+    await page
+      .getByTestId("redirect-uri-0")
+      .fill("http://localhost:*/oauth/callback");
+
+    // Enable scopes
+    await page.getByTestId("profile").click();
+    await page.getByTestId("email").click();
+
+    await page.getByTestId("submit-button").click();
+    await expect(page.getByText("Client Created")).toBeVisible();
+
+    portWildcardClientId = await page
+      .getByTestId("client-id-display")
+      .inputValue();
+
+    await page.close();
+    await context.close();
+  });
+
+  test("should accept redirect URI with matching port", async ({
+    request,
+  }) => {
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
+
+    const response = await request.get("/api/oauth/authorize", {
+      params: {
+        client_id: portWildcardClientId,
+        redirect_uri: "http://localhost:3000/oauth/callback",
+        response_type: "code",
+        scope: "openid",
+        code_challenge: codeChallenge,
+        code_challenge_method: "S256",
+      },
+      maxRedirects: 0,
+    });
+
+    // Should NOT be a 400 error — the redirect URI matches the port wildcard
+    expect(response.status()).not.toBe(400);
+  });
+
+  test("should reject redirect URI with non-matching path", async ({
+    request,
+  }) => {
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
+
+    const response = await request.get("/api/oauth/authorize", {
+      params: {
+        client_id: portWildcardClientId,
+        redirect_uri: "http://localhost:3000/other-path",
+        response_type: "code",
+        scope: "openid",
+        code_challenge: codeChallenge,
+        code_challenge_method: "S256",
+      },
+    });
+
+    expect(response.status()).toBe(400);
+    const json = await response.json();
+    expect(json.error).toBe("invalid_redirect_uri");
+  });
+});
