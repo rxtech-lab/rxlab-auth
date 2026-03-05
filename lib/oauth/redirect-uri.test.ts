@@ -177,5 +177,37 @@ describe("matchRedirectUri", () => {
         ])
       ).toBe(true);
     });
+
+    test("should handle wildcard port on localhost", () => {
+      expect(
+        matchRedirectUri("http://localhost:3000/callback", [
+          "http://localhost:*/callback",
+        ])
+      ).toBe(true);
+    });
+
+    test("should handle wildcard port with different port numbers", () => {
+      expect(
+        matchRedirectUri("http://localhost:8080/oauth/callback", [
+          "http://localhost:*/oauth/callback",
+        ])
+      ).toBe(true);
+    });
+
+    test("should not match wildcard port when path differs", () => {
+      expect(
+        matchRedirectUri("http://localhost:3000/other", [
+          "http://localhost:*/callback",
+        ])
+      ).toBe(false);
+    });
+
+    test("should handle wildcard in both subdomain and port", () => {
+      expect(
+        matchRedirectUri("http://app.localhost:3000/callback", [
+          "http://*.localhost:*/callback",
+        ])
+      ).toBe(true);
+    });
   });
 });
