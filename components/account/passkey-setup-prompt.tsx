@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, KeyRound, ShieldCheck } from "lucide-react";
@@ -27,11 +27,21 @@ export function PasskeySetupPrompt() {
     await registerPasskey(name.trim());
   };
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     setIsOpen(false);
     clearError();
     router.replace("/account");
-  };
+  }, [clearError, router]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen && !isLoading) {
+        handleSkip();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isLoading, handleSkip]);
 
   return (
     <AnimatePresence>
@@ -48,6 +58,9 @@ export function PasskeySetupPrompt() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="passkey-setup-title"
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-background border rounded-lg p-6 z-50 shadow-lg"
             data-testid="passkey-setup-prompt"
           >
@@ -56,7 +69,7 @@ export function PasskeySetupPrompt() {
                 <ShieldCheck className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h2 className="font-semibold">Secure your account</h2>
+                <h2 id="passkey-setup-title" className="font-semibold">Secure your account</h2>
                 <p className="text-sm text-muted-foreground">
                   Add a passkey for faster, more secure sign-in
                 </p>
