@@ -10,6 +10,7 @@ export const users = sqliteTable(
     username: text("username").unique(),
     displayName: text("display_name"),
     avatarSeed: text("avatar_seed"), // for geometric identicon generation
+    avatarUrl: text("avatar_url"), // uploaded avatar URL (Vercel Blob)
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useRef, useTransition } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Upload, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/actions/account/update-profile";
+import { uploadAvatar, removeAvatar } from "@/actions/account/avatar";
 
 interface ProfileFormProps {
   user: {
@@ -14,15 +15,19 @@ interface ProfileFormProps {
     username: string | null;
     displayName: string | null;
     avatarSeed: string | null;
+    avatarUrl: string | null;
   };
 }
 
 export function ProfileForm({ user }: ProfileFormProps) {
   const [username, setUsername] = useState(user.username || "");
   const [displayName, setDisplayName] = useState(user.displayName || "");
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState(user.avatarUrl);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isAvatarPending, startAvatarTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +48,53 @@ export function ProfileForm({ user }: ProfileFormProps) {
       }
     });
   };
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setSuccess(false);
+
+    startAvatarTransition(async () => {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const result = await uploadAvatar(formData);
+
+      if (result.success && result.avatarUrl) {
+        setCurrentAvatarUrl(result.avatarUrl);
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        setError(result.error || "Failed to upload avatar");
+      }
+    });
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    setError(null);
+    setSuccess(false);
+
+    startAvatarTransition(async () => {
+      const result = await removeAvatar();
+
+      if (result.success) {
+        setCurrentAvatarUrl(null);
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        setError(result.error || "Failed to remove avatar");
+      }
+    });
+  };
+
+  const avatarSrc = currentAvatarUrl || `/api/avatar/${user.avatarSeed || user.email}`;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -68,14 +120,49 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
       <div className="flex items-center gap-5">
         <img
-          src={`/api/avatar/${user.avatarSeed || user.email}`}
+          src={avatarSrc}
           alt="Avatar"
-          className="w-24 h-24 rounded-full"
+          className="w-24 h-24 rounded-full object-cover"
         />
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Your avatar is automatically generated
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isAvatarPending}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isAvatarPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Upload className="size-4" />
+              )}
+              Upload
+            </Button>
+            {currentAvatarUrl && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isAvatarPending}
+                onClick={handleRemoveAvatar}
+              >
+                <Trash2 className="size-4" />
+                Remove
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            JPEG, PNG, WebP, or GIF. Max 2MB.
           </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
         </div>
       </div>
 
