@@ -261,7 +261,7 @@ async function handleAuthorizationCodeGrant(
       // Always include profile claims
       name: user.displayName ?? undefined,
       preferred_username: user.username ?? undefined,
-      picture: `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
+      picture: user.avatarUrl || `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
       nonce: codeData.nonce,
       auth_time: Math.floor(Date.now() / 1000),
     },

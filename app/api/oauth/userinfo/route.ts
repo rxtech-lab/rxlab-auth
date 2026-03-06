@@ -55,7 +55,7 @@ async function handleUserInfo(request: NextRequest) {
       // Always include profile claims
       name: user.displayName,
       preferred_username: user.username,
-      picture: `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
+      picture: user.avatarUrl || `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
     };
 
     if (grantedScopes.includes("email")) {

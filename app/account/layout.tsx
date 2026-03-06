@@ -43,6 +43,7 @@ export default async function AccountLayout({
       username: true,
       displayName: true,
       avatarSeed: true,
+      avatarUrl: true,
       emailVerified: true,
     },
   });
@@ -57,11 +58,11 @@ export default async function AccountLayout({
     <DropdownMenu>
       <DropdownMenuTrigger className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
         <Image
-          src={`/api/avatar/${user.avatarSeed || user.id}`}
+          src={user.avatarUrl || `/api/avatar/${user.avatarSeed || user.id}`}
           alt="Avatar"
           width={32}
           height={32}
-          className="rounded-full cursor-pointer"
+          className="rounded-full cursor-pointer object-cover w-8 h-8"
           unoptimized
         />
       </DropdownMenuTrigger>
