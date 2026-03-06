@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { uploadImage, deleteImage } from "@/lib/blob";
+import { AVATAR_MAX_FILE_SIZE, AVATAR_ALLOWED_TYPES } from "@/lib/constants/avatar";
 import { eq } from "drizzle-orm";
 
 export interface UploadAvatarResult {
@@ -11,9 +12,6 @@ export interface UploadAvatarResult {
   error?: string;
   avatarUrl?: string;
 }
-
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export async function uploadAvatar(
   formData: FormData
@@ -30,7 +28,7 @@ export async function uploadAvatar(
     }
 
     // Validate file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!AVATAR_ALLOWED_TYPES.includes(file.type as typeof AVATAR_ALLOWED_TYPES[number])) {
       return {
         success: false,
         error: "Invalid file type. Please upload a JPEG, PNG, WebP, or GIF image.",
@@ -38,7 +36,7 @@ export async function uploadAvatar(
     }
 
     // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > AVATAR_MAX_FILE_SIZE) {
       return {
         success: false,
         error: "File is too large. Maximum size is 2MB.",

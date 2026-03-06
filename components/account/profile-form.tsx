@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/actions/account/update-profile";
 import { uploadAvatar, removeAvatar } from "@/actions/account/avatar";
+import { AVATAR_ACCEPT } from "@/lib/constants/avatar";
 
 interface ProfileFormProps {
   user: {
@@ -159,7 +160,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept={AVATAR_ACCEPT}
             onChange={handleAvatarUpload}
             className="hidden"
           />
