@@ -55,11 +55,13 @@ export async function POST(request: NextRequest) {
               .webp({ quality: 80 })
               .toBuffer();
 
-            // Upload the WebP version
-            const webpFilename = `avatars/${crypto.randomUUID()}.webp`;
+            // Upload the WebP version using userId as filename to allow overwrite
+            const webpFilename = `avatars/${userId}.webp`;
             const webpBlob = await put(webpFilename, webpBuffer, {
               access: "public",
               contentType: "image/webp",
+              allowOverwrite: true,
+              addRandomSuffix: false,
             });
 
             // Delete the original uploaded file
