@@ -3,90 +3,16 @@
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
-import { uploadImage, deleteImage } from "@/lib/blob";
-import { AVATAR_MAX_FILE_SIZE, AVATAR_ALLOWED_TYPES } from "@/lib/constants/avatar";
+import { deleteImage } from "@/lib/blob";
 import { eq } from "drizzle-orm";
 
-export interface UploadAvatarResult {
+export interface AvatarActionResult {
   success: boolean;
   error?: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
 }
 
-export async function uploadAvatar(
-  formData: FormData
-): Promise<UploadAvatarResult> {
-  try {
-    const session = await requireAuth();
-
-    const file = formData.get("avatar") as File | null;
-    if (!file || !(file instanceof File)) {
-      return {
-        success: false,
-        error: "No file provided",
-      };
-    }
-
-    // Validate file type
-    if (!AVATAR_ALLOWED_TYPES.includes(file.type as typeof AVATAR_ALLOWED_TYPES[number])) {
-      return {
-        success: false,
-        error: "Invalid file type. Please upload a JPEG, PNG, WebP, or GIF image.",
-      };
-    }
-
-    // Validate file size
-    if (file.size > AVATAR_MAX_FILE_SIZE) {
-      return {
-        success: false,
-        error: "File is too large. Maximum size is 2MB.",
-      };
-    }
-
-    // Get current user to check for existing avatar
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.userId!),
-    });
-
-    if (!user) {
-      return {
-        success: false,
-        error: "User not found",
-      };
-    }
-
-    // Delete old avatar if exists
-    if (user.avatarUrl) {
-      try {
-        await deleteImage(user.avatarUrl);
-      } catch {
-        // Ignore deletion errors for old avatar
-      }
-    }
-
-    // Upload new avatar
-    const result = await uploadImage(file, "avatars");
-
-    // Update user record
-    await db
-      .update(users)
-      .set({
-        avatarUrl: result.url,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, session.userId!));
-
-    return { success: true, avatarUrl: result.url };
-  } catch (error) {
-    console.error("Upload avatar error:", error);
-    return {
-      success: false,
-      error: "Failed to upload avatar",
-    };
-  }
-}
-
-export async function removeAvatar(): Promise<UploadAvatarResult> {
+export async function removeAvatar(): Promise<AvatarActionResult> {
   try {
     const session = await requireAuth();
 
@@ -102,16 +28,8 @@ export async function removeAvatar(): Promise<UploadAvatarResult> {
       };
     }
 
-    // Delete avatar from blob storage if exists
-    if (user.avatarUrl) {
-      try {
-        await deleteImage(user.avatarUrl);
-      } catch {
-        // Ignore deletion errors
-      }
-    }
-
-    // Clear avatar URL from user record
+    // Clear avatar URL from user record first
+    const oldAvatarUrl = user.avatarUrl;
     await db
       .update(users)
       .set({
@@ -120,12 +38,50 @@ export async function removeAvatar(): Promise<UploadAvatarResult> {
       })
       .where(eq(users.id, session.userId!));
 
+    // Delete avatar from blob storage if exists (best-effort cleanup)
+    if (oldAvatarUrl) {
+      try {
+        await deleteImage(oldAvatarUrl);
+      } catch {
+        // Ignore deletion errors
+      }
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Remove avatar error:", error);
     return {
       success: false,
       error: "Failed to remove avatar",
+    };
+  }
+}
+
+/**
+ * Get the current user's avatar URL.
+ * Used to poll for the processed WebP avatar after client upload.
+ */
+export async function getAvatarUrl(): Promise<AvatarActionResult> {
+  try {
+    const session = await requireAuth();
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.userId!),
+    });
+
+    if (!user) {
+      return {
+        success: false,
+        error: "User not found",
+      };
+    }
+
+    return { success: true, avatarUrl: user.avatarUrl };
+  } catch (error) {
+    console.error("Get avatar URL error:", error);
+    return {
+      success: false,
+      error: "Failed to get avatar URL",
     };
   }
 }

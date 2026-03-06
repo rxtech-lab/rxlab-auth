@@ -51,109 +51,18 @@ mock.module("@/lib/auth/session", () => ({
 }));
 
 // Mock blob functions
-const mockUploadImage = mock(() =>
-  Promise.resolve({ url: "https://blob.vercel-storage.com/avatars/new-avatar.png", pathname: "avatars/new-avatar.png" })
-);
 const mockDeleteImage = mock(() => Promise.resolve());
 mock.module("@/lib/blob", () => ({
-  uploadImage: mockUploadImage,
   deleteImage: mockDeleteImage,
 }));
 
 // Import after mocking
-const { uploadAvatar, removeAvatar } = await import("./avatar");
-
-describe("uploadAvatar", () => {
-  beforeEach(() => {
-    mockDb.query.users.findFirst = mock(() => Promise.resolve({ ...mockUser, avatarUrl: null }));
-    mockDb.update = mock(() => ({
-      set: mock(() => ({
-        where: mock(() => Promise.resolve()),
-      })),
-    }));
-    mockUploadImage.mockImplementation(() =>
-      Promise.resolve({ url: "https://blob.vercel-storage.com/avatars/new-avatar.png", pathname: "avatars/new-avatar.png" })
-    );
-    mockDeleteImage.mockImplementation(() => Promise.resolve());
-  });
-
-  test("should upload avatar successfully", async () => {
-    const formData = new FormData();
-    const file = new File(["fake-image-data"], "avatar.png", { type: "image/png" });
-    formData.append("avatar", file);
-
-    const result = await uploadAvatar(formData);
-
-    expect(result.success).toBe(true);
-    expect(result.avatarUrl).toBe("https://blob.vercel-storage.com/avatars/new-avatar.png");
-  });
-
-  test("should return error when no file provided", async () => {
-    const formData = new FormData();
-
-    const result = await uploadAvatar(formData);
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("No file provided");
-  });
-
-  test("should return error for invalid file type", async () => {
-    const formData = new FormData();
-    const file = new File(["fake-data"], "doc.pdf", { type: "application/pdf" });
-    formData.append("avatar", file);
-
-    const result = await uploadAvatar(formData);
-
-    expect(result.success).toBe(false);
-    expect(result.error).toContain("Invalid file type");
-  });
-
-  test("should return error for file too large", async () => {
-    const formData = new FormData();
-    // Create a file larger than 2MB
-    const largeContent = new Uint8Array(3 * 1024 * 1024);
-    const file = new File([largeContent], "large.png", { type: "image/png" });
-    formData.append("avatar", file);
-
-    const result = await uploadAvatar(formData);
-
-    expect(result.success).toBe(false);
-    expect(result.error).toContain("too large");
-  });
-
-  test("should delete old avatar when uploading new one", async () => {
-    mockDb.query.users.findFirst = mock(() =>
-      Promise.resolve({ ...mockUser, avatarUrl: "https://blob.vercel-storage.com/avatars/old-avatar.png" })
-    );
-
-    const formData = new FormData();
-    const file = new File(["fake-image-data"], "avatar.png", { type: "image/png" });
-    formData.append("avatar", file);
-
-    const result = await uploadAvatar(formData);
-
-    expect(result.success).toBe(true);
-    expect(mockDeleteImage).toHaveBeenCalled();
-  });
-
-  test("should return error when user not found", async () => {
-    mockDb.query.users.findFirst = mock(() => Promise.resolve(null));
-
-    const formData = new FormData();
-    const file = new File(["fake-image-data"], "avatar.png", { type: "image/png" });
-    formData.append("avatar", file);
-
-    const result = await uploadAvatar(formData);
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("User not found");
-  });
-});
+const { removeAvatar, getAvatarUrl } = await import("./avatar");
 
 describe("removeAvatar", () => {
   beforeEach(() => {
     mockDb.query.users.findFirst = mock(() =>
-      Promise.resolve({ ...mockUser, avatarUrl: "https://blob.vercel-storage.com/avatars/avatar.png" })
+      Promise.resolve({ ...mockUser, avatarUrl: "https://blob.vercel-storage.com/avatars/avatar.webp" })
     );
     mockDb.update = mock(() => ({
       set: mock(() => ({
@@ -170,6 +79,27 @@ describe("removeAvatar", () => {
     expect(mockDeleteImage).toHaveBeenCalled();
   });
 
+  test("should clear DB before deleting blob (safe ordering)", async () => {
+    const callOrder: string[] = [];
+    mockDb.update = mock(() => {
+      callOrder.push("db_update");
+      return {
+        set: mock(() => ({
+          where: mock(() => Promise.resolve()),
+        })),
+      };
+    });
+    mockDeleteImage.mockImplementation(() => {
+      callOrder.push("blob_delete");
+      return Promise.resolve();
+    });
+
+    await removeAvatar();
+
+    expect(callOrder[0]).toBe("db_update");
+    expect(callOrder[1]).toBe("blob_delete");
+  });
+
   test("should succeed even when user has no avatar", async () => {
     mockDb.query.users.findFirst = mock(() =>
       Promise.resolve({ ...mockUser, avatarUrl: null })
@@ -184,6 +114,41 @@ describe("removeAvatar", () => {
     mockDb.query.users.findFirst = mock(() => Promise.resolve(null));
 
     const result = await removeAvatar();
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("User not found");
+  });
+});
+
+describe("getAvatarUrl", () => {
+  beforeEach(() => {
+    mockDb.query.users.findFirst = mock(() =>
+      Promise.resolve({ ...mockUser, avatarUrl: "https://blob.vercel-storage.com/avatars/avatar.webp" })
+    );
+  });
+
+  test("should return avatar URL when set", async () => {
+    const result = await getAvatarUrl();
+
+    expect(result.success).toBe(true);
+    expect(result.avatarUrl).toBe("https://blob.vercel-storage.com/avatars/avatar.webp");
+  });
+
+  test("should return null avatar URL when not set", async () => {
+    mockDb.query.users.findFirst = mock(() =>
+      Promise.resolve({ ...mockUser, avatarUrl: null })
+    );
+
+    const result = await getAvatarUrl();
+
+    expect(result.success).toBe(true);
+    expect(result.avatarUrl).toBeNull();
+  });
+
+  test("should return error when user not found", async () => {
+    mockDb.query.users.findFirst = mock(() => Promise.resolve(null));
+
+    const result = await getAvatarUrl();
 
     expect(result.success).toBe(false);
     expect(result.error).toBe("User not found");
