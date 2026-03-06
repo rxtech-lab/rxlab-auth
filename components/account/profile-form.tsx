@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useRef, useTransition, useCallback } from "react";
+import { upload } from "@vercel/blob/client";
 import { motion } from "framer-motion";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Upload, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/actions/account/update-profile";
+import { removeAvatar, getAvatarUrl } from "@/actions/account/avatar";
+import { AVATAR_ACCEPT, AVATAR_MAX_FILE_SIZE } from "@/lib/constants/avatar";
 
 interface ProfileFormProps {
   user: {
@@ -14,20 +17,29 @@ interface ProfileFormProps {
     username: string | null;
     displayName: string | null;
     avatarSeed: string | null;
+    avatarUrl: string | null;
   };
 }
 
 export function ProfileForm({ user }: ProfileFormProps) {
   const [username, setUsername] = useState(user.username || "");
   const [displayName, setDisplayName] = useState(user.displayName || "");
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState(user.avatarUrl);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isAvatarPending, setIsAvatarPending] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const showSuccess = useCallback((message: string) => {
+    setSuccessMessage(message);
+    setTimeout(() => setSuccessMessage(null), 3000);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
+    setSuccessMessage(null);
 
     startTransition(async () => {
       const result = await updateProfile({
@@ -36,13 +48,97 @@ export function ProfileForm({ user }: ProfileFormProps) {
       });
 
       if (result.success) {
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
+        showSuccess("Profile updated successfully!");
       } else {
         setError(result.error || "Failed to update profile");
       }
     });
   };
+
+  const handleAvatarUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side validation
+    if (file.size > AVATAR_MAX_FILE_SIZE) {
+      setError("File is too large. Maximum size is 4MB.");
+      return;
+    }
+
+    setError(null);
+    setSuccessMessage(null);
+    setIsAvatarPending(true);
+
+    try {
+      // Upload using Vercel Blob client upload
+      await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/avatar/upload",
+      });
+
+      // Poll for the processed WebP avatar URL
+      // The onUploadCompleted callback processes the image server-side
+      let attempts = 0;
+      const maxAttempts = 10;
+      const pollInterval = 1500;
+
+      const pollForAvatar = async (): Promise<string | null> => {
+        while (attempts < maxAttempts) {
+          attempts++;
+          const result = await getAvatarUrl();
+          if (result.success && result.avatarUrl && result.avatarUrl !== currentAvatarUrl) {
+            return result.avatarUrl;
+          }
+          await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        }
+        return null;
+      };
+
+      const newAvatarUrl = await pollForAvatar();
+      if (newAvatarUrl) {
+        setCurrentAvatarUrl(newAvatarUrl);
+        showSuccess("Avatar uploaded successfully!");
+      } else {
+        // Even if polling doesn't find the update, the upload succeeded
+        // Just reload to get the latest state
+        showSuccess("Avatar uploaded! It may take a moment to process.");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to upload avatar"
+      );
+    } finally {
+      setIsAvatarPending(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setError(null);
+    setSuccessMessage(null);
+    setIsAvatarPending(true);
+
+    try {
+      const result = await removeAvatar();
+
+      if (result.success) {
+        setCurrentAvatarUrl(null);
+        showSuccess("Avatar removed successfully!");
+      } else {
+        setError(result.error || "Failed to remove avatar");
+      }
+    } finally {
+      setIsAvatarPending(false);
+    }
+  };
+
+  const avatarSrc =
+    currentAvatarUrl || `/api/avatar/${user.avatarSeed || user.email}`;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -56,26 +152,61 @@ export function ProfileForm({ user }: ProfileFormProps) {
         </motion.div>
       )}
 
-      {success && (
+      {successMessage && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="bg-green-500/10 text-green-600 dark:text-green-400 text-sm rounded-xl p-3"
         >
-          Profile updated successfully!
+          {successMessage}
         </motion.div>
       )}
 
       <div className="flex items-center gap-5">
         <img
-          src={`/api/avatar/${user.avatarSeed || user.email}`}
+          src={avatarSrc}
           alt="Avatar"
-          className="w-24 h-24 rounded-full"
+          className="w-24 h-24 rounded-full object-cover"
         />
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Your avatar is automatically generated
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isAvatarPending}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isAvatarPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Upload className="size-4" />
+              )}
+              Upload
+            </Button>
+            {currentAvatarUrl && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isAvatarPending}
+                onClick={handleRemoveAvatar}
+              >
+                <Trash2 className="size-4" />
+                Remove
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            JPEG, PNG, WebP, or GIF. Max 4MB.
           </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={AVATAR_ACCEPT}
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
         </div>
       </div>
 

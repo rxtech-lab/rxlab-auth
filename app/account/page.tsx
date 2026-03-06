@@ -50,6 +50,7 @@ export default async function AccountPage({
               username: user.username,
               displayName: user.displayName,
               avatarSeed: user.avatarSeed,
+              avatarUrl: user.avatarUrl,
             }}
           />
         </CardContent>
