@@ -62,7 +62,7 @@ export default async function AccountLayout({
           alt="Avatar"
           width={32}
           height={32}
-          className="rounded-full cursor-pointer"
+          className="rounded-full cursor-pointer object-cover w-8 h-8"
           unoptimized
         />
       </DropdownMenuTrigger>
