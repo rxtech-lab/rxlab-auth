@@ -74,7 +74,13 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
     try {
       // Upload using Vercel Blob client upload with userId-based pathname
-      const ext = file.name.split(".").pop() || "png";
+      const mimeToExt: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+      };
+      const ext = mimeToExt[file.type] || "png";
       await upload(`avatars/${user.id}.${ext}`, file, {
         access: "public",
         handleUploadUrl: "/api/avatar/upload",
