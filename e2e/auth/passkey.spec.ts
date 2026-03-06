@@ -33,7 +33,7 @@ test.describe("Passkey Authentication", () => {
     await page.getByLabel("Email").fill(testUser.email);
     await page.getByLabel("Password").fill(testUser.password);
     await page.getByRole("button", { name: "Create account" }).click();
-    await expect(page).toHaveURL("/account");
+    await expect(page).toHaveURL("/account?setup=passkey");
     await page.close();
   });
 
@@ -115,7 +115,7 @@ test.describe("Passkey with Virtual Authenticator", () => {
       await page.getByLabel("Email").fill(testUser.email);
       await page.getByLabel("Password").fill(testUser.password);
       await page.getByRole("button", { name: "Create account" }).click();
-      await expect(page).toHaveURL("/account");
+      await expect(page).toHaveURL("/account?setup=passkey");
 
       // Navigate to passkeys
       await page.goto("/account/passkeys");

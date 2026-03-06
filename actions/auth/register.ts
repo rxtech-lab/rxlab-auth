@@ -138,7 +138,7 @@ export async function registerAndRedirect(input: RegisterInput): Promise<void> {
 
   if (result.success) {
     if (process.env.E2E_SKIP_EMAIL_VERIFICATION === "true") {
-      redirect("/account");
+      redirect("/account?setup=passkey");
     } else {
       redirect("/verify-email?sent=true");
     }

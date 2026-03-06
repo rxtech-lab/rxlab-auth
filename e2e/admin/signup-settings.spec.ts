@@ -67,8 +67,8 @@ test.describe("Sign-up Settings", () => {
     await page.getByLabel("Password").fill("TestPassword123!");
     await page.getByRole("button", { name: "Create account" }).click();
 
-    // Should redirect to account page
-    await expect(page).toHaveURL("/account");
+    // Should redirect to account page with passkey setup prompt
+    await expect(page).toHaveURL("/account?setup=passkey");
   });
 
   test("should block non-whitelisted email when whitelist is enabled", async ({
@@ -146,8 +146,8 @@ test.describe("Sign-up Settings", () => {
     await page.getByLabel("Password").fill("TestPassword123!");
     await page.getByRole("button", { name: "Create account" }).click();
 
-    // Should redirect to account page
-    await expect(page).toHaveURL("/account");
+    // Should redirect to account page with passkey setup prompt
+    await expect(page).toHaveURL("/account?setup=passkey");
   });
 
   test("should update register page immediately after settings change", async ({

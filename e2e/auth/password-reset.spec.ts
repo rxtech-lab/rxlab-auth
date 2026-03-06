@@ -18,7 +18,7 @@ test.describe("Password Reset - Single Use Token", () => {
     await page.getByLabel("Email").fill(testUser.email);
     await page.getByLabel("Password").fill(testUser.password);
     await page.getByRole("button", { name: "Create account" }).click();
-    await expect(page).toHaveURL("/account");
+    await expect(page).toHaveURL("/account?setup=passkey");
     await page.close();
   });
 

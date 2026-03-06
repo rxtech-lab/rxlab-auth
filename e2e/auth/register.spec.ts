@@ -22,8 +22,8 @@ test.describe("User Registration", () => {
 
     await page.getByRole("button", { name: "Create account" }).click();
 
-    // Should redirect to account page (email verification skipped in E2E)
-    await expect(page).toHaveURL("/account");
+    // Should redirect to account page with passkey setup prompt (email verification skipped in E2E)
+    await expect(page).toHaveURL("/account?setup=passkey");
   
   });
 
@@ -36,7 +36,7 @@ test.describe("User Registration", () => {
     await page.getByLabel("Email").fill(uniqueEmail);
     await page.getByLabel("Password").fill("TestPassword123!");
     await page.getByRole("button", { name: "Create account" }).click();
-    await expect(page).toHaveURL("/account");
+    await expect(page).toHaveURL("/account?setup=passkey");
 
     // Logout and wait for redirect to login
     await page.getByRole("button", { name: "Avatar" }).click();
