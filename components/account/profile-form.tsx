@@ -87,11 +87,11 @@ export function ProfileForm({ user }: ProfileFormProps) {
       const pollForAvatar = async (): Promise<string | null> => {
         while (attempts < maxAttempts) {
           attempts++;
-          await new Promise((resolve) => setTimeout(resolve, pollInterval));
           const result = await getAvatarUrl();
           if (result.success && result.avatarUrl && result.avatarUrl !== currentAvatarUrl) {
             return result.avatarUrl;
           }
+          await new Promise((resolve) => setTimeout(resolve, pollInterval));
         }
         return null;
       };
@@ -118,25 +118,23 @@ export function ProfileForm({ user }: ProfileFormProps) {
     }
   };
 
-  const handleRemoveAvatar = () => {
+  const handleRemoveAvatar = async () => {
     setError(null);
     setSuccessMessage(null);
     setIsAvatarPending(true);
 
-    (async () => {
-      try {
-        const result = await removeAvatar();
+    try {
+      const result = await removeAvatar();
 
-        if (result.success) {
-          setCurrentAvatarUrl(null);
-          showSuccess("Avatar removed successfully!");
-        } else {
-          setError(result.error || "Failed to remove avatar");
-        }
-      } finally {
-        setIsAvatarPending(false);
+      if (result.success) {
+        setCurrentAvatarUrl(null);
+        showSuccess("Avatar removed successfully!");
+      } else {
+        setError(result.error || "Failed to remove avatar");
       }
-    })();
+    } finally {
+      setIsAvatarPending(false);
+    }
   };
 
   const avatarSrc =

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         }
 
         return {
-          allowedContentTypes: AVATAR_ALLOWED_TYPES as unknown as string[],
+          allowedContentTypes: [...AVATAR_ALLOWED_TYPES],
           maximumSizeInBytes: AVATAR_MAX_FILE_SIZE,
           tokenPayload: JSON.stringify({
             userId: session.userId,
@@ -67,8 +67,8 @@ export async function POST(request: NextRequest) {
             where: eq(users.id, userId),
           });
 
-          // Delete old avatar if exists and is different
-          if (user?.avatarUrl && user.avatarUrl !== blob.url) {
+          // Delete old avatar if exists
+          if (user?.avatarUrl) {
             try {
               await del(user.avatarUrl);
             } catch {
