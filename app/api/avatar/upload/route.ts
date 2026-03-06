@@ -70,9 +70,10 @@ export async function POST(request: NextRequest) {
             }
 
             finalUrl = webpBlob.url;
-          } catch {
+          } catch (conversionError) {
             // sharp could not process the image (unsupported format);
             // keep the original uploaded blob as the avatar
+            console.warn("Sharp image conversion failed, using original:", conversionError);
             finalUrl = blob.url;
           }
 
