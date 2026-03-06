@@ -28,6 +28,8 @@ export async function POST(request: NextRequest) {
         return {
           allowedContentTypes: [...AVATAR_ALLOWED_TYPES],
           maximumSizeInBytes: AVATAR_MAX_FILE_SIZE,
+          allowOverwrite: true,
+          addRandomSuffix: false,
           tokenPayload: JSON.stringify({
             userId: session.userId,
             ...(clientPayload ? { clientPayload } : {}),

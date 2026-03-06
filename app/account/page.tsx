@@ -38,6 +38,7 @@ export default async function AccountPage() {
         <CardContent className="pt-6">
           <ProfileForm
             user={{
+              id: user.id,
               email: user.email,
               username: user.username,
               displayName: user.displayName,
