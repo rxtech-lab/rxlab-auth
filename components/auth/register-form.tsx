@@ -124,7 +124,6 @@ export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
-            minLength={8}
             disabled={isPending}
           />
         </div>
