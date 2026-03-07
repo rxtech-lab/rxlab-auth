@@ -38,6 +38,10 @@ test.describe("User Registration", () => {
     await page.getByRole("button", { name: "Create account" }).click();
     await expect(page).toHaveURL("/account?setup=passkey");
 
+    // Dismiss passkey setup prompt
+    await page.getByTestId("skip-passkey-setup").click();
+    await expect(page).toHaveURL("/account");
+
     // Logout and wait for redirect to login
     await page.getByRole("button", { name: "Avatar" }).click();
     await page.getByRole("button", { name: /sign out/i }).click();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, KeyRound, ShieldCheck } from "lucide-react";
@@ -13,6 +13,7 @@ export function PasskeySetupPrompt() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
   const [name, setName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { isLoading, error, registerPasskey, clearError } = usePasskey({
     onSuccess: () => {
@@ -28,10 +29,11 @@ export function PasskeySetupPrompt() {
   };
 
   const handleSkip = useCallback(() => {
+    if (isLoading) return;
     setIsOpen(false);
     clearError();
     router.replace("/account");
-  }, [clearError, router]);
+  }, [clearError, router, isLoading]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -42,6 +44,13 @@ export function PasskeySetupPrompt() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, isLoading, handleSkip]);
+
+  // Focus the passkey name input when the dialog opens
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
@@ -86,6 +95,7 @@ export function PasskeySetupPrompt() {
               <div className="space-y-2">
                 <Label htmlFor="setup-passkey-name">Passkey Name</Label>
                 <Input
+                  ref={inputRef}
                   id="setup-passkey-name"
                   placeholder="e.g., MacBook Pro, iPhone"
                   value={name}

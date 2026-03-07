@@ -16,7 +16,12 @@ export async function registerUser(page: Page, user = testUser) {
   await page.getByRole("button", { name: "Create account" }).click();
 
   // Should redirect to account page with passkey setup prompt (email verification skipped in E2E)
-  await expect(page).toHaveURL(/\/account(\?setup=passkey)?/, { timeout: 20000 });
+  await expect(page).toHaveURL("/account?setup=passkey", { timeout: 20000 });
+
+  // Dismiss the passkey setup prompt so subsequent interactions aren't blocked
+  const skipButton = page.getByTestId("skip-passkey-setup");
+  await skipButton.click();
+  await expect(page).toHaveURL("/account", { timeout: 10000 });
 }
 
 export async function loginUser(page: Page, user = testUser) {
