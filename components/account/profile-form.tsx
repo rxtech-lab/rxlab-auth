@@ -13,6 +13,7 @@ import { AVATAR_ACCEPT, AVATAR_MAX_FILE_SIZE } from "@/lib/constants/avatar";
 
 interface ProfileFormProps {
   user: {
+    id: string;
     email: string;
     username: string | null;
     displayName: string | null;
@@ -72,8 +73,15 @@ export function ProfileForm({ user }: ProfileFormProps) {
     setIsAvatarPending(true);
 
     try {
-      // Upload using Vercel Blob client upload
-      await upload(file.name, file, {
+      // Upload using Vercel Blob client upload with userId-based pathname
+      const mimeToExt: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+      };
+      const ext = mimeToExt[file.type] || "png";
+      await upload(`avatars/${user.id}.${ext}`, file, {
         access: "public",
         handleUploadUrl: "/api/avatar/upload",
       });
