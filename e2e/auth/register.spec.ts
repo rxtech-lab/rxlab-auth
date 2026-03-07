@@ -7,7 +7,8 @@ test.describe("User Registration", () => {
     await expect(page.getByRole("heading", { name: "Create an account" })).toBeVisible();
     await expect(page.getByLabel("Display Name")).toBeVisible();
     await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Password")).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Confirm Password")).toBeVisible();
     await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
   });
 
@@ -18,7 +19,8 @@ test.describe("User Registration", () => {
 
     await page.getByLabel("Display Name").fill("Test User");
     await page.getByLabel("Email").fill(uniqueEmail);
-    await page.getByLabel("Password").fill("TestPassword123!");
+    await page.getByLabel("Password", { exact: true }).fill("TestPassword123!");
+    await page.getByLabel("Confirm Password").fill("TestPassword123!");
 
     await page.getByRole("button", { name: "Create account" }).click();
 
@@ -34,7 +36,8 @@ test.describe("User Registration", () => {
     await page.goto("/register");
     await page.getByLabel("Display Name").fill("Test User");
     await page.getByLabel("Email").fill(uniqueEmail);
-    await page.getByLabel("Password").fill("TestPassword123!");
+    await page.getByLabel("Password", { exact: true }).fill("TestPassword123!");
+    await page.getByLabel("Confirm Password").fill("TestPassword123!");
     await page.getByRole("button", { name: "Create account" }).click();
     await expect(page).toHaveURL("/account");
 
@@ -50,7 +53,8 @@ test.describe("User Registration", () => {
     // Try to register with same email
     await page.getByLabel("Display Name").fill("Test User 2");
     await page.getByLabel("Email").fill(uniqueEmail);
-    await page.getByLabel("Password").fill("TestPassword123!");
+    await page.getByLabel("Password", { exact: true }).fill("TestPassword123!");
+    await page.getByLabel("Confirm Password").fill("TestPassword123!");
     await page.getByRole("button", { name: "Create account" }).click();
 
     // Should show error
@@ -62,12 +66,27 @@ test.describe("User Registration", () => {
 
     await page.getByLabel("Display Name").fill("Test User");
     await page.getByLabel("Email").fill("test@example.com");
-    await page.getByLabel("Password").fill("short"); // Less than 8 characters
+    await page.getByLabel("Password", { exact: true }).fill("short"); // Less than 8 characters
+    await page.getByLabel("Confirm Password").fill("short");
 
     await page.getByRole("button", { name: "Create account" }).click();
 
     // Should show validation error
     await expect(page.getByText(/at least 8 characters/i)).toBeVisible();
+  });
+
+  test("should show error when passwords do not match", async ({ page }) => {
+    await page.goto("/register");
+
+    await page.getByLabel("Display Name").fill("Test User");
+    await page.getByLabel("Email").fill("test-mismatch@example.com");
+    await page.getByLabel("Password", { exact: true }).fill("TestPassword123!");
+    await page.getByLabel("Confirm Password").fill("DifferentPassword123!");
+
+    await page.getByRole("button", { name: "Create account" }).click();
+
+    // Should show password mismatch error
+    await expect(page.getByText(/passwords do not match/i)).toBeVisible();
   });
 
   test("should have link to login page", async ({ page }) => {
