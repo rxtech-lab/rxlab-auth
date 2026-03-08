@@ -8,22 +8,18 @@ export async function fetchWithRetry(
   maxRetries: number = 3,
   baseDelayMs: number = 1000
 ): Promise<Response> {
-  let lastResponse: Response | undefined;
+  let lastResponse: Response = await fetch(url);
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const response = await fetch(url);
-    if (response.ok) {
-      return response;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    if (lastResponse.ok) {
+      return lastResponse;
     }
 
-    lastResponse = response;
+    const delay = baseDelayMs * Math.pow(2, attempt - 1);
+    await new Promise((resolve) => setTimeout(resolve, delay));
 
-    // Don't wait after the last attempt
-    if (attempt < maxRetries) {
-      const delay = baseDelayMs * Math.pow(2, attempt);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
+    lastResponse = await fetch(url);
   }
 
-  return lastResponse!;
+  return lastResponse;
 }
