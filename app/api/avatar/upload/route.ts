@@ -10,6 +10,7 @@ import {
   AVATAR_MAX_FILE_SIZE,
   AVATAR_ALLOWED_TYPES,
 } from "@/lib/constants/avatar";
+import { fetchWithRetry } from "@/lib/utils/fetch-with-retry";
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as HandleUploadBody;
@@ -41,8 +42,8 @@ export async function POST(request: NextRequest) {
           const payload = JSON.parse(tokenPayload as string);
           const userId = payload.userId as string;
 
-          // Download the uploaded image
-          const response = await fetch(blob.url);
+          // Download the uploaded image (retry to handle CDN propagation delays)
+          const response = await fetchWithRetry(blob.url);
           if (!response.ok) {
             throw new Error(
               `Failed to fetch uploaded image: ${response.status}`
