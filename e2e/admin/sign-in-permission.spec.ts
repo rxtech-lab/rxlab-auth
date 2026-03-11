@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { adminLogin, createOAuthClient } from "../fixtures/test-helpers";
+import { adminLogin, createOAuthClient, handleAccountSelection } from "../fixtures/test-helpers";
 
 const ADMIN_PASSWORD = "e2e-test-admin-password";
 const CODE_CHALLENGE = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
@@ -313,6 +313,9 @@ test.describe("Client Sign-in Permission", () => {
           `code_challenge_method=S256`
       );
 
+      // Handle account selection step
+      await handleAccountSelection(page);
+
       // Should show consent page or redirect with code (whitelisted user can proceed)
       const url = page.url();
       if (url.includes("/oauth/authorize")) {
@@ -356,6 +359,9 @@ test.describe("Client Sign-in Permission", () => {
           `code_challenge=${CODE_CHALLENGE}&` +
           `code_challenge_method=S256`
       );
+
+      // Handle account selection step
+      await handleAccountSelection(page);
 
       // Should show consent page or redirect with code
       const url = page.url();

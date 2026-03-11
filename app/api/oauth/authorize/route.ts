@@ -108,23 +108,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // If user is already signed in and hasn't confirmed their account,
-  // redirect to account selection page
-  const accountConfirmed = searchParams.get("account_confirmed");
-  if (!accountConfirmed) {
-    const accountSelectUrl = new URL("/oauth/account-select", request.url);
-    accountSelectUrl.searchParams.set("client_id", client_id);
-    accountSelectUrl.searchParams.set("redirect_uri", redirect_uri);
-    accountSelectUrl.searchParams.set("response_type", "code");
-    accountSelectUrl.searchParams.set("scope", scope);
-    if (state) accountSelectUrl.searchParams.set("state", state);
-    accountSelectUrl.searchParams.set("code_challenge", code_challenge);
-    accountSelectUrl.searchParams.set("code_challenge_method", code_challenge_method);
-    if (nonce) accountSelectUrl.searchParams.set("nonce", nonce);
-    return NextResponse.redirect(accountSelectUrl);
-  }
-
-  // Check sign-in permission
+  // Check sign-in permission before account selection
+  // (rejected users should not see account selection)
   if (client.signInPermission === "none") {
     const redirectUrl = new URL(redirect_uri);
     redirectUrl.searchParams.set("error", "access_denied");
@@ -169,6 +154,22 @@ export async function GET(request: NextRequest) {
       if (state) redirectUrl.searchParams.set("state", state);
       return NextResponse.redirect(redirectUrl);
     }
+  }
+
+  // If user is already signed in and hasn't confirmed their account,
+  // redirect to account selection page
+  const accountConfirmed = searchParams.get("account_confirmed");
+  if (!accountConfirmed) {
+    const accountSelectUrl = new URL("/oauth/account-select", request.url);
+    accountSelectUrl.searchParams.set("client_id", client_id);
+    accountSelectUrl.searchParams.set("redirect_uri", redirect_uri);
+    accountSelectUrl.searchParams.set("response_type", "code");
+    accountSelectUrl.searchParams.set("scope", scope);
+    if (state) accountSelectUrl.searchParams.set("state", state);
+    accountSelectUrl.searchParams.set("code_challenge", code_challenge);
+    accountSelectUrl.searchParams.set("code_challenge_method", code_challenge_method);
+    if (nonce) accountSelectUrl.searchParams.set("nonce", nonce);
+    return NextResponse.redirect(accountSelectUrl);
   }
 
   // Check for existing consent
