@@ -100,18 +100,23 @@ export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn || !session.userId) {
     // Store OAuth params in session and redirect to login
+    // Add fresh_login flag so we skip account selection after login
     const loginUrl = new URL("/login", request.url);
+    const redirectParams = new URLSearchParams(searchParams.toString());
+    redirectParams.set("fresh_login", "true");
     loginUrl.searchParams.set(
       "redirect",
-      `/api/oauth/authorize?${searchParams.toString()}`
+      `/api/oauth/authorize?${redirectParams.toString()}`
     );
     return NextResponse.redirect(loginUrl);
   }
 
   // If user is already signed in and hasn't confirmed their account,
-  // redirect to account selection page
+  // redirect to account selection page.
+  // Skip account selection if user just logged in (fresh_login=true)
   const accountConfirmed = searchParams.get("account_confirmed");
-  if (!accountConfirmed) {
+  const freshLogin = searchParams.get("fresh_login");
+  if (!accountConfirmed && !freshLogin) {
     const accountSelectUrl = new URL("/oauth/account-select", request.url);
     accountSelectUrl.searchParams.set("client_id", client_id);
     accountSelectUrl.searchParams.set("redirect_uri", redirect_uri);

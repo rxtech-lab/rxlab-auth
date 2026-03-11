@@ -9,6 +9,7 @@ export async function switchAccount(
   await destroySession();
 
   const searchParams = new URLSearchParams(oauthParams);
+  searchParams.set("fresh_login", "true");
   const loginUrl = `/login?redirect=/api/oauth/authorize?${searchParams.toString()}`;
   redirect(loginUrl);
 }
