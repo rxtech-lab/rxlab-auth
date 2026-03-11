@@ -205,6 +205,9 @@ test.describe("Client Sign-in Permission", () => {
           `code_challenge_method=S256`
       );
 
+      // Handle account selection step
+      await handleAccountSelection(page);
+
       // Should redirect with access_denied error
       await page.waitForURL(/localhost:3001\/callback/);
       const finalUrl = new URL(page.url());
@@ -252,6 +255,9 @@ test.describe("Client Sign-in Permission", () => {
           `code_challenge=${CODE_CHALLENGE}&` +
           `code_challenge_method=S256`
       );
+
+      // Handle account selection step
+      await handleAccountSelection(page);
 
       // Should redirect with access_denied error
       await page.waitForURL(/localhost:3001\/callback/);
