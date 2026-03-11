@@ -45,8 +45,6 @@ export function AccountSelectCard({
     });
   };
 
-  const isLoading = isPending;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -67,7 +65,7 @@ export function AccountSelectCard({
         <CardContent className="space-y-3">
           <button
             onClick={handleContinue}
-            disabled={isLoading}
+            disabled={isPending}
             data-testid="continue-as-current"
             className="w-full flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -87,7 +85,7 @@ export function AccountSelectCard({
 
           <button
             onClick={handleSwitchAccount}
-            disabled={isLoading}
+            disabled={isPending}
             data-testid="use-different-account"
             className="w-full flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >

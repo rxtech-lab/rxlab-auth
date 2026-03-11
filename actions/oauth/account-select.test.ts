@@ -1,10 +1,8 @@
 import { describe, expect, test, mock, beforeEach } from "bun:test";
 
 // Track calls for verification
-const mockDestroySession = mock(() => Promise.resolve());
-const mockRedirect = mock((url: string) => {
-  throw new Error(`REDIRECT:${url}`);
-});
+const mockDestroySession = mock();
+const mockRedirect = mock();
 
 // Mock modules
 mock.module("@/lib/auth/session", () => ({
