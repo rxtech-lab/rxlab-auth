@@ -49,11 +49,15 @@ export async function POST(request: NextRequest) {
       attestationType: "none",
       excludeCredentials,
       authenticatorSelection: {
-        residentKey: "preferred",
+        residentKey: "required",
+        requireResidentKey: true,
         userVerification: "preferred",
         authenticatorAttachment: "platform",
       },
       supportedAlgorithmIDs: [-7, -257], // ES256, RS256
+      extensions: { prf: {} } as Parameters<
+        typeof generateRegistrationOptions
+      >[0]["extensions"],
     });
 
     // Store challenge in Redis with admin prefix

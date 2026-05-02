@@ -22,11 +22,16 @@ export function getRegistrationOptions(
     attestationType: "none",
     excludeCredentials,
     authenticatorSelection: {
-      residentKey: "preferred",
+      residentKey: "required",
+      requireResidentKey: true,
       userVerification: "preferred",
       authenticatorAttachment: "platform",
     },
     supportedAlgorithmIDs: [-7, -257], // ES256, RS256
+    // PRF extension isn't in @simplewebauthn's DOM types yet, but is passed
+    // through to the client and enables HKDF-based symmetric key derivation
+    // at authentication time (e.g. for E2EE key wrapping).
+    extensions: { prf: {} } as GenerateRegistrationOptionsOpts["extensions"],
   };
 }
 
