@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Loader2, Info } from "lucide-react";
@@ -16,6 +16,12 @@ interface RegisterFormProps {
 
 export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/account";
+  const loginHref =
+    redirectTo === "/account"
+      ? "/login"
+      : `/login?redirect=${encodeURIComponent(redirectTo)}`;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -30,7 +36,7 @@ export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
       const result = await register({ email, password, displayName: displayName || undefined });
       if (result.success) {
         if (process.env.NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION === "true") {
-          router.push("/account");
+          router.push(redirectTo);
         } else {
           router.push("/verify-email?sent=true");
         }
@@ -129,7 +135,7 @@ export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href="/login"
+          href={loginHref}
           className="text-primary hover:text-primary/80 transition-colors"
         >
           Sign in

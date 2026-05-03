@@ -8,8 +8,10 @@ export async function switchAccount(
 ): Promise<void> {
   await destroySession();
 
-  const searchParams = new URLSearchParams(oauthParams);
-  searchParams.set("fresh_login", "true");
-  const loginUrl = `/login?redirect=/api/oauth/authorize?${searchParams.toString()}`;
-  redirect(loginUrl);
+  const authorizeParams = new URLSearchParams(oauthParams);
+  authorizeParams.set("fresh_login", "true");
+  const loginParams = new URLSearchParams({
+    redirect: `/api/oauth/authorize?${authorizeParams.toString()}`,
+  });
+  redirect(`/login?${loginParams.toString()}`);
 }
