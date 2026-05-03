@@ -121,4 +121,120 @@ test.describe("OAuth Account Selection", () => {
     await expect(page).toHaveURL(/\/oauth\/authorize/);
     expect(page.url()).not.toContain("/oauth/account-select");
   });
+
+  test("preserves OAuth params through 'use different account' → re-login", async ({
+    page,
+  }, testInfo) => {
+    const user = {
+      email: `acct-sel-switch-${Date.now()}-${testInfo.parallelIndex}@example.com`,
+      password: "TestPassword123!",
+      displayName: "Switch Account User",
+    };
+
+    // Register the user (auto-logs in)
+    await page.goto("/register");
+    await page.getByLabel("Display Name").fill(user.displayName);
+    await page.getByLabel("Email").fill(user.email);
+    await page.getByLabel("Password").fill(user.password);
+    await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page).toHaveURL("/account");
+
+    // Start OAuth flow while logged in
+    await page.goto(buildAuthorizeUrl(clientId));
+    await expect(page).toHaveURL(/\/oauth\/account-select/);
+
+    // Click "Use a different account" - should sign out and redirect to login
+    // with the OAuth params preserved in `redirect`
+    await page.getByTestId("use-different-account").click();
+
+    // Should land on /login
+    await expect(page).toHaveURL(/\/login\?/);
+
+    // The login URL must have a single `redirect` param whose value (when
+    // URL-decoded) contains all OAuth params. If the inner `&` chars were not
+    // encoded, the outer URL parser will only see `client_id` in `redirect`
+    // and the rest will leak as top-level query params on /login.
+    const loginUrl = new URL(page.url());
+    const redirectParam = loginUrl.searchParams.get("redirect");
+    expect(redirectParam).not.toBeNull();
+    // Outer URL must not have top-level OAuth params (regression check).
+    expect(loginUrl.searchParams.get("redirect_uri")).toBeNull();
+    expect(loginUrl.searchParams.get("response_type")).toBeNull();
+
+    const redirectUrl = new URL(redirectParam!, "http://localhost:3000");
+    expect(redirectUrl.pathname).toBe("/api/oauth/authorize");
+    expect(redirectUrl.searchParams.get("client_id")).toBe(clientId);
+    expect(redirectUrl.searchParams.get("redirect_uri")).toBe(
+      "http://localhost:3001/callback"
+    );
+    expect(redirectUrl.searchParams.get("response_type")).toBe("code");
+    expect(redirectUrl.searchParams.get("scope")).toBe("openid profile email");
+    expect(redirectUrl.searchParams.get("code_challenge")).toBeTruthy();
+    expect(redirectUrl.searchParams.get("code_challenge_method")).toBe("S256");
+    expect(redirectUrl.searchParams.get("fresh_login")).toBe("true");
+
+    // Sign in
+    await page.getByLabel("Email").fill(user.email);
+    await page.getByLabel("Password").fill(user.password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+
+    // Should leave /login and reach the consent page (NOT the OAuth error page).
+    await page.waitForURL((url) => !url.toString().includes("/login"));
+    expect(page.url()).not.toContain("/oauth/error");
+    await expect(
+      page.getByText("redirect_uri must be a valid URL")
+    ).not.toBeVisible();
+
+    // fresh_login=true should skip account selection
+    expect(page.url()).not.toContain("/oauth/account-select");
+  });
+
+  test("preserves OAuth params through /login → 'Sign up' link → register", async ({
+    page,
+  }, testInfo) => {
+    const user = {
+      email: `acct-sel-signup-${Date.now()}-${testInfo.parallelIndex}@example.com`,
+      password: "TestPassword123!",
+      displayName: "Signup From OAuth User",
+    };
+
+    // Hit OAuth authorize while logged out → should redirect to /login with
+    // `redirect` param holding the full authorize URL.
+    await page.goto(buildAuthorizeUrl(clientId));
+    await expect(page).toHaveURL(/\/login\?redirect=/);
+
+    const loginRedirectParam = new URL(page.url()).searchParams.get("redirect");
+    expect(loginRedirectParam).not.toBeNull();
+
+    // Click the "Sign up" link from the login page.
+    await page.getByRole("link", { name: "Sign up" }).click();
+
+    // /register must preserve the same `redirect` param so the user ends up
+    // back in the OAuth flow after creating an account. If the link drops it,
+    // OAuth context is silently lost (and any browser-back path can resurface
+    // a malformed URL → "redirect_uri must be a valid URL").
+    await expect(page).toHaveURL(/\/register/);
+    const registerRedirectParam = new URL(page.url()).searchParams.get(
+      "redirect"
+    );
+    expect(registerRedirectParam).toBe(loginRedirectParam);
+
+    // Fill out the register form.
+    await page.getByLabel("Display Name").fill(user.displayName);
+    await page.getByLabel("Email").fill(user.email);
+    await page.getByLabel("Password").fill(user.password);
+    await page.getByRole("button", { name: "Create account" }).click();
+
+    // After sign-up, the user must land in the OAuth flow (consent page or
+    // callback), NOT silently dumped on /account with the OAuth context lost.
+    await page.waitForURL(
+      (url) => !url.toString().includes("/register"),
+      { timeout: 20000 }
+    );
+    expect(page.url()).not.toContain("/oauth/error");
+    await expect(
+      page.getByText("redirect_uri must be a valid URL")
+    ).not.toBeVisible();
+    expect(page.url()).not.toMatch(/\/account(?:$|\?|#)/);
+  });
 });
