@@ -132,6 +132,57 @@ export const passkeyRegisterVerifyRequestSchema = z.object({
   scope: z.string().optional(),
 });
 
+// POST /api/oauth/passkey/upgrade/options
+// Bearer-token-authenticated. Body is optional; `name` lets the client label
+// the new credential ("MacBook Pro", etc.).
+export const passkeyUpgradeOptionsRequestSchema = z.object({
+  name: z.string().min(1).max(64).optional(),
+});
+
+// POST /api/oauth/passkey/upgrade/verify
+// Bearer-token-authenticated. The user is derived from the access token, so
+// no client_id / scope are needed — this route does not issue OAuth tokens.
+export const passkeyUpgradeVerifyRequestSchema = z.object({
+  session_id: z.string().min(1, "session_id is required"),
+  credential: passkeyAttestationSchema,
+  name: z.string().min(1).max(64).optional(),
+});
+
+export type PasskeyUpgradeOptionsRequest = z.infer<
+  typeof passkeyUpgradeOptionsRequestSchema
+>;
+export type PasskeyUpgradeVerifyRequest = z.infer<
+  typeof passkeyUpgradeVerifyRequestSchema
+>;
+
+// POST /api/oauth/passkey/account-creation/options
+// Pre-auth. iOS 26 / macOS 26 ASAuthorizationAccountCreationProvider — the
+// OS sheet collects the contact identifier from iCloud at verify time, so
+// no username/name is supplied here.
+export const passkeyAccountCreationOptionsRequestSchema = z.object({
+  client_id: z.string().min(1, "client_id is required"),
+  redirect_uri: z.string().min(1, "redirect_uri is required"),
+});
+
+// POST /api/oauth/passkey/account-creation/verify
+// `contact_identifier` is the email or phone returned by the OS sheet.
+export const passkeyAccountCreationVerifyRequestSchema = z.object({
+  client_id: z.string().min(1, "client_id is required"),
+  session_id: z.string().min(1, "session_id is required"),
+  credential: passkeyAttestationSchema,
+  contact_identifier: z.string().min(1, "contact_identifier is required"),
+  contact_identifier_type: z.enum(["email", "phone_number"]),
+  name: z.string().min(1).max(64).optional(),
+  scope: z.string().optional(),
+});
+
+export type PasskeyAccountCreationOptionsRequest = z.infer<
+  typeof passkeyAccountCreationOptionsRequestSchema
+>;
+export type PasskeyAccountCreationVerifyRequest = z.infer<
+  typeof passkeyAccountCreationVerifyRequestSchema
+>;
+
 export type PasskeyAuthOptionsRequest = z.infer<
   typeof passkeyAuthOptionsRequestSchema
 >;

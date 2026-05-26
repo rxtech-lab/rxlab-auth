@@ -62,6 +62,7 @@ mock.module("@/lib/oauth/jwt", () => ({
   signAccessToken: signAccessTokenMock,
   signIdToken: signIdTokenMock,
   generateRefreshToken: generateRefreshTokenMock,
+  verifyAccessToken: mock(),
 }));
 
 mock.module("@/lib/redis", () => ({

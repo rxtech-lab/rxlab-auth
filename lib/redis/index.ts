@@ -48,7 +48,9 @@ export interface WebAuthnChallengeData {
     | "registration"
     | "authentication"
     | "native-registration"
-    | "native-authentication";
+    | "native-authentication"
+    | "passkey-upgrade"
+    | "passkey-account-creation";
   createdAt: number;
   // Native (OAuth) passkey flows pin the challenge to a specific client.
   clientId?: string;
