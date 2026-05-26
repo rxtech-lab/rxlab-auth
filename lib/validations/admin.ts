@@ -92,6 +92,23 @@ export const addClientWhitelistEmailSchema = z.object({
   clientId: z.string().min(1, "Client ID is required"),
 });
 
+// Apple app identifier: <TEAMID>.<BUNDLEID>
+// - TEAMID: 10-char uppercase alphanumeric Apple Developer Team ID
+// - BUNDLEID: reverse-DNS bundle id (letters, digits, dots, dashes)
+const appleAppIdRegex = /^[A-Z0-9]{10}\.[A-Za-z0-9][A-Za-z0-9.\-]*$/;
+
+export const addClientAppIdSchema = z.object({
+  clientId: z.string().min(1, "Client ID is required"),
+  appId: z
+    .string()
+    .min(1, "App ID is required")
+    .max(255, "App ID is too long")
+    .regex(
+      appleAppIdRegex,
+      "Must be in the form <TEAMID>.<BUNDLEID> (e.g. ABCDE12345.com.example.app)"
+    ),
+});
+
 export type UpdateSignUpSettingsInput = z.infer<
   typeof updateSignUpSettingsSchema
 >;
@@ -99,6 +116,7 @@ export type AddWhitelistEmailInput = z.infer<typeof addWhitelistEmailSchema>;
 export type AddClientWhitelistEmailInput = z.infer<
   typeof addClientWhitelistEmailSchema
 >;
+export type AddClientAppIdInput = z.infer<typeof addClientAppIdSchema>;
 
 // User management schemas
 export const createUserSchema = z.object({

@@ -43,6 +43,13 @@
       "when": 1772582400000,
       "tag": "0005_easy_avatar",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1779778803950,
+      "tag": "0006_familiar_mandarin",
+      "breakpoints": true
     }
   ]
 }
