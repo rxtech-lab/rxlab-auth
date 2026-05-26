@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { tokenRequestSchema, parseScopes, validateScopes } from "./oauth";
+import {
+  tokenRequestSchema,
+  signupRequestSchema,
+  parseScopes,
+  validateScopes,
+} from "./oauth";
 
 describe("tokenRequestSchema - client_credentials", () => {
   test("should accept valid client_credentials request", () => {
@@ -158,14 +163,120 @@ describe("tokenRequestSchema - refresh_token", () => {
   });
 });
 
-describe("tokenRequestSchema - unsupported grant types", () => {
-  test("should reject unsupported grant type", () => {
+describe("tokenRequestSchema - password", () => {
+  test("should accept valid password grant request", () => {
     const result = tokenRequestSchema.safeParse({
       grant_type: "password",
-      username: "test",
-      password: "test",
+      username: "user@example.com",
+      password: "hunter2",
+      client_id: "test-client",
     });
 
+    expect(result.success).toBe(true);
+  });
+
+  test("should accept password grant with optional scope and client_secret", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "password",
+      username: "user@example.com",
+      password: "hunter2",
+      client_id: "test-client",
+      client_secret: "test-secret",
+      scope: "openid email",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success && result.data.grant_type === "password") {
+      expect(result.data.scope).toBe("openid email");
+    }
+  });
+
+  test("should reject password grant missing username", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "password",
+      password: "hunter2",
+      client_id: "test-client",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  test("should reject password grant missing password", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "password",
+      username: "user@example.com",
+      client_id: "test-client",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  test("should reject password grant missing client_id", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "password",
+      username: "user@example.com",
+      password: "hunter2",
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("tokenRequestSchema - unsupported grant types", () => {
+  test("should reject unknown grant type", () => {
+    const result = tokenRequestSchema.safeParse({
+      grant_type: "device_code",
+      client_id: "test-client",
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("signupRequestSchema", () => {
+  test("should accept valid signup request", () => {
+    const result = signupRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      username: "user@example.com",
+      password: "correct-horse",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("should accept optional name and scope", () => {
+    const result = signupRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      username: "user@example.com",
+      password: "correct-horse",
+      name: "Test User",
+      scope: "openid email",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("should reject non-email username", () => {
+    const result = signupRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      username: "not-an-email",
+      password: "correct-horse",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("should reject password shorter than 8 chars", () => {
+    const result = signupRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      username: "user@example.com",
+      password: "short",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("should reject missing client_id", () => {
+    const result = signupRequestSchema.safeParse({
+      username: "user@example.com",
+      password: "correct-horse",
+    });
     expect(result.success).toBe(false);
   });
 });

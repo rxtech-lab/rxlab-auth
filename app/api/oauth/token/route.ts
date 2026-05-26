@@ -146,6 +146,9 @@ export async function POST(request: NextRequest) {
     } else if (data.grant_type === "client_credentials") {
       console.log("Handling client credentials grant");
       return handleClientCredentialsGrant(data, client);
+    } else if (data.grant_type === "password") {
+      console.log("Handling password grant");
+      return handlePasswordGrant(data, client);
     }
 
     console.log("Unsupported grant type:", data);
@@ -456,5 +459,144 @@ async function handleClientCredentialsGrant(
     token_type: "Bearer",
     expires_in: 3600,
     scope: scopeString,
+  });
+}
+
+async function handlePasswordGrant(
+  data: {
+    grant_type: "password";
+    username: string;
+    password: string;
+    client_id: string;
+    client_secret?: string;
+    scope?: string;
+  },
+  client: typeof oauthClients.$inferSelect,
+) {
+  // Gate to first-party clients with open sign-in only.
+  // password grant bypasses the web consent UI, so we refuse for any
+  // client that has restricted sign-in (none/whitelist).
+  if (client.signInPermission !== "all") {
+    return NextResponse.json(
+      {
+        error: "unauthorized_client",
+        error_description:
+          "password grant is only available for first-party clients",
+      },
+      { status: 400 },
+    );
+  }
+
+  // Resolve allowed scopes; default to client's allowed scopes when omitted
+  const allowedScopes: string[] = JSON.parse(client.allowedScopes);
+  let requestedScopes: string[];
+  if (data.scope) {
+    requestedScopes = data.scope.split(" ").filter(Boolean);
+    const invalidScopes = requestedScopes.filter(
+      (s) => !allowedScopes.includes(s),
+    );
+    if (invalidScopes.length > 0) {
+      return NextResponse.json(
+        {
+          error: "invalid_scope",
+          error_description: `Requested scope(s) not allowed: ${invalidScopes.join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
+  } else {
+    requestedScopes = allowedScopes;
+  }
+
+  // Look up user by email (preferred) or username field
+  const normalized = data.username.toLowerCase();
+  const user = await db.query.users.findFirst({
+    where: or(eq(users.email, normalized), eq(users.username, data.username)),
+  });
+
+  if (!user || !user.passwordHash) {
+    return NextResponse.json(
+      {
+        error: "invalid_grant",
+        error_description: "Invalid username or password",
+      },
+      { status: 400 },
+    );
+  }
+
+  const passwordValid = await verifyPassword(user.passwordHash, data.password);
+  if (!passwordValid) {
+    return NextResponse.json(
+      {
+        error: "invalid_grant",
+        error_description: "Invalid username or password",
+      },
+      { status: 400 },
+    );
+  }
+
+  // Enforce email verification (mirrors actions/auth/login.ts)
+  if (
+    !user.emailVerified &&
+    process.env.E2E_SKIP_EMAIL_VERIFICATION !== "true"
+  ) {
+    return NextResponse.json(
+      {
+        error: "invalid_grant",
+        error_description: "Email address is not verified",
+      },
+      { status: 400 },
+    );
+  }
+
+  const scopeString = requestedScopes.join(" ");
+
+  const accessToken = await signAccessToken({
+    sub: user.id,
+    client_id: client.id,
+    scope: scopeString,
+  });
+
+  // Issue id_token when openid scope was granted
+  let idToken: string | undefined;
+  if (requestedScopes.includes("openid")) {
+    idToken = await signIdToken(
+      {
+        sub: user.id,
+        email: requestedScopes.includes("email") ? user.email : undefined,
+        email_verified: requestedScopes.includes("email")
+          ? (user.emailVerified ?? false)
+          : undefined,
+        name: user.displayName ?? undefined,
+        preferred_username: user.username ?? undefined,
+        picture:
+          user.avatarUrl ||
+          `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
+        auth_time: Math.floor(Date.now() / 1000),
+      },
+      client.id,
+    );
+  }
+
+  const refreshToken = generateRefreshToken();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  await db.insert(oauthRefreshTokens).values({
+    id: crypto.randomUUID(),
+    token: refreshToken,
+    userId: user.id,
+    clientId: client.id,
+    scopes: JSON.stringify(requestedScopes),
+    expiresAt,
+    createdAt: new Date(),
+  });
+
+  return NextResponse.json({
+    access_token: accessToken,
+    token_type: "Bearer",
+    expires_in: 3600,
+    ...(idToken ? { id_token: idToken } : {}),
+    scope: scopeString,
+    refresh_token: refreshToken,
   });
 }
