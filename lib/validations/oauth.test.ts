@@ -2,9 +2,36 @@ import { describe, expect, test } from "bun:test";
 import {
   tokenRequestSchema,
   signupRequestSchema,
+  passkeyAuthOptionsRequestSchema,
+  passkeyAuthVerifyRequestSchema,
+  passkeyRegisterOptionsRequestSchema,
+  passkeyRegisterVerifyRequestSchema,
   parseScopes,
   validateScopes,
 } from "./oauth";
+
+const VALID_ASSERTION = {
+  id: "cred-id-base64url",
+  rawId: "cred-id-base64url",
+  type: "public-key" as const,
+  response: {
+    clientDataJSON: "abc",
+    authenticatorData: "def",
+    signature: "ghi",
+    userHandle: "jkl",
+  },
+};
+
+const VALID_ATTESTATION = {
+  id: "cred-id-base64url",
+  rawId: "cred-id-base64url",
+  type: "public-key" as const,
+  response: {
+    clientDataJSON: "abc",
+    attestationObject: "def",
+    transports: ["internal"],
+  },
+};
 
 describe("tokenRequestSchema - client_credentials", () => {
   test("should accept valid client_credentials request", () => {
@@ -276,6 +303,110 @@ describe("signupRequestSchema", () => {
     const result = signupRequestSchema.safeParse({
       username: "user@example.com",
       password: "correct-horse",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("passkeyAuthOptionsRequestSchema", () => {
+  test("accepts minimal body", () => {
+    const result = passkeyAuthOptionsRequestSchema.safeParse({
+      client_id: "macos-test-app",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("accepts optional username (email)", () => {
+    const result = passkeyAuthOptionsRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      username: "user@example.com",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects non-email username", () => {
+    const result = passkeyAuthOptionsRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      username: "not-an-email",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects missing client_id", () => {
+    const result = passkeyAuthOptionsRequestSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("passkeyAuthVerifyRequestSchema", () => {
+  test("accepts valid request", () => {
+    const result = passkeyAuthVerifyRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      session_id: "session-id",
+      credential: VALID_ASSERTION,
+      scope: "openid",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects missing session_id", () => {
+    const result = passkeyAuthVerifyRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      credential: VALID_ASSERTION,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects credential missing assertion fields", () => {
+    const result = passkeyAuthVerifyRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      session_id: "session-id",
+      credential: { id: "x", rawId: "x", type: "public-key", response: {} },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("passkeyRegisterOptionsRequestSchema", () => {
+  test("accepts minimal body", () => {
+    const result = passkeyRegisterOptionsRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      username: "user@example.com",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects non-email username", () => {
+    const result = passkeyRegisterOptionsRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      username: "not-an-email",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects missing client_id", () => {
+    const result = passkeyRegisterOptionsRequestSchema.safeParse({
+      username: "user@example.com",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("passkeyRegisterVerifyRequestSchema", () => {
+  test("accepts valid request", () => {
+    const result = passkeyRegisterVerifyRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      session_id: "session-id",
+      credential: VALID_ATTESTATION,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects credential missing attestation fields", () => {
+    const result = passkeyRegisterVerifyRequestSchema.safeParse({
+      client_id: "macos-test-app",
+      session_id: "session-id",
+      credential: { id: "x", rawId: "x", type: "public-key", response: {} },
     });
     expect(result.success).toBe(false);
   });

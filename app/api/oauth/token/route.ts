@@ -14,6 +14,7 @@ import {
   signIdToken,
   generateRefreshToken,
 } from "@/lib/oauth/jwt";
+import { issueOAuthTokenResponse } from "@/lib/oauth/issue-tokens";
 import { parseBasicAuth } from "@/lib/oauth/basic-auth";
 import { tokenRequestSchema } from "@/lib/validations/oauth";
 import { eq, and, isNull, or, gt } from "drizzle-orm";
@@ -549,54 +550,11 @@ async function handlePasswordGrant(
     );
   }
 
-  const scopeString = requestedScopes.join(" ");
-
-  const accessToken = await signAccessToken({
-    sub: user.id,
-    client_id: client.id,
-    scope: scopeString,
+  const tokenResponse = await issueOAuthTokenResponse({
+    user,
+    client,
+    scopes: requestedScopes,
   });
 
-  // Issue id_token when openid scope was granted
-  let idToken: string | undefined;
-  if (requestedScopes.includes("openid")) {
-    idToken = await signIdToken(
-      {
-        sub: user.id,
-        email: requestedScopes.includes("email") ? user.email : undefined,
-        email_verified: requestedScopes.includes("email")
-          ? (user.emailVerified ?? false)
-          : undefined,
-        name: user.displayName ?? undefined,
-        preferred_username: user.username ?? undefined,
-        picture:
-          user.avatarUrl ||
-          `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
-        auth_time: Math.floor(Date.now() / 1000),
-      },
-      client.id,
-    );
-  }
-
-  const refreshToken = generateRefreshToken();
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-  await db.insert(oauthRefreshTokens).values({
-    id: crypto.randomUUID(),
-    token: refreshToken,
-    userId: user.id,
-    clientId: client.id,
-    scopes: JSON.stringify(requestedScopes),
-    expiresAt,
-    createdAt: new Date(),
-  });
-
-  return NextResponse.json({
-    access_token: accessToken,
-    token_type: "Bearer",
-    expires_in: 3600,
-    ...(idToken ? { id_token: idToken } : {}),
-    scope: scopeString,
-    refresh_token: refreshToken,
-  });
+  return NextResponse.json(tokenResponse);
 }
