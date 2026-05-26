@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { handleAccountSelection } from "../fixtures/test-helpers";
 import * as crypto from "crypto";
 
 const ADMIN_PASSWORD = "e2e-test-admin-password";
@@ -98,6 +99,9 @@ test.describe("OAuth Refresh Token Flow", () => {
         `code_challenge_method=S256`
     );
 
+    // Handle account selection if shown
+    await handleAccountSelection(page);
+
     // Wait for consent page or redirect
     const url = page.url();
     if (url.includes("/oauth/authorize")) {
@@ -161,6 +165,9 @@ test.describe("OAuth Refresh Token Flow", () => {
         `code_challenge=${codeChallenge}&` +
         `code_challenge_method=S256`
     );
+
+    // Handle account selection if shown
+    await handleAccountSelection(page);
 
     // Wait for consent page or redirect (may auto-approve)
     const url = page.url();
@@ -250,6 +257,9 @@ test.describe("OAuth Refresh Token Flow", () => {
         `code_challenge=${codeChallenge}&` +
         `code_challenge_method=S256`
     );
+
+    // Handle account selection if shown
+    await handleAccountSelection(page);
 
     // Handle consent if needed
     const url = page.url();

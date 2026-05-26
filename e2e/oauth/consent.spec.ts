@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { handleAccountSelection } from "../fixtures/test-helpers";
 
 // Use the hardcoded admin password from playwright.config.ts
 const ADMIN_PASSWORD = "e2e-test-admin-password";
@@ -102,7 +103,8 @@ test.describe("OAuth Consent Flow", () => {
       `code_challenge_method=S256`
     );
 
-    // Should show consent page
+    // Should show account selection first, then consent page
+    await handleAccountSelection(page);
     await expect(page).toHaveURL(/\/oauth\/authorize/);
     await expect(page.getByRole('heading', { name: 'Consent Test App' })).toBeVisible();
     await expect(page.getByText(/wants to access your account/i)).toBeVisible();
@@ -134,6 +136,9 @@ test.describe("OAuth Consent Flow", () => {
       `code_challenge=${codeChallenge}&` +
       `code_challenge_method=S256`
     );
+
+    // Handle account selection if shown
+    await handleAccountSelection(page);
 
     // Wait for consent page or redirect (might auto-approve if already consented)
     const url = page.url();
@@ -180,6 +185,9 @@ test.describe("OAuth Consent Flow", () => {
       `code_challenge_method=S256`
     );
 
+    // Handle account selection if shown
+    await handleAccountSelection(page);
+
     // Should show consent page
     await expect(page).toHaveURL(/\/oauth\/authorize/);
 
@@ -220,6 +228,9 @@ test.describe("OAuth Consent Flow", () => {
       `code_challenge=${codeChallenge}&` +
       `code_challenge_method=S256`
     );
+
+    // Handle account selection if shown
+    await handleAccountSelection(page);
 
     await expect(page).toHaveURL(/\/oauth\/authorize/);
     await page.getByRole("button", { name: "Allow" }).click();

@@ -50,6 +50,16 @@ export async function adminLogin(page: Page) {
   await expect(page).toHaveURL("/admin/dashboard", { timeout: 20000 });
 }
 
+export async function handleAccountSelection(page: Page) {
+  if (page.url().includes("/oauth/account-select")) {
+    await page.getByTestId("continue-as-current").click();
+    // Wait for navigation away from account-select page
+    await page.waitForURL(
+      (url) => !url.toString().includes("/oauth/account-select")
+    );
+  }
+}
+
 export async function createOAuthClient(
   page: Page,
   options: {

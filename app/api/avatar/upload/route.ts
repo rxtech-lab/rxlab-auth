@@ -10,6 +10,7 @@ import {
   AVATAR_MAX_FILE_SIZE,
   AVATAR_ALLOWED_TYPES,
 } from "@/lib/constants/avatar";
+import { fetchWithRetry } from "@/lib/utils/fetch-with-retry";
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as HandleUploadBody;
@@ -28,6 +29,8 @@ export async function POST(request: NextRequest) {
         return {
           allowedContentTypes: [...AVATAR_ALLOWED_TYPES],
           maximumSizeInBytes: AVATAR_MAX_FILE_SIZE,
+          allowOverwrite: true,
+          addRandomSuffix: false,
           tokenPayload: JSON.stringify({
             userId: session.userId,
             ...(clientPayload ? { clientPayload } : {}),
@@ -39,27 +42,44 @@ export async function POST(request: NextRequest) {
           const payload = JSON.parse(tokenPayload as string);
           const userId = payload.userId as string;
 
-          // Download the uploaded image
-          const response = await fetch(blob.url);
+          // Download the uploaded image (retry to handle CDN propagation delays)
+          const response = await fetchWithRetry(blob.url);
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch uploaded image: ${response.status}`
+            );
+          }
           const imageBuffer = Buffer.from(await response.arrayBuffer());
 
-          // Convert to WebP using sharp
-          const webpBuffer = await sharp(imageBuffer)
-            .webp({ quality: 80 })
-            .toBuffer();
-
-          // Upload the WebP version
-          const webpFilename = `avatars/${crypto.randomUUID()}.webp`;
-          const webpBlob = await put(webpFilename, webpBuffer, {
-            access: "public",
-            contentType: "image/webp",
-          });
-
-          // Delete the original uploaded file
+          // Try to convert to WebP using sharp; fall back to original if unsupported
+          let finalUrl: string;
           try {
-            await del(blob.url);
-          } catch {
-            // Ignore deletion errors for original file
+            const webpBuffer = await sharp(imageBuffer)
+              .webp({ quality: 80 })
+              .toBuffer();
+
+            // Upload the WebP version using userId as filename to allow overwrite
+            const webpFilename = `avatars/${userId}.webp`;
+            const webpBlob = await put(webpFilename, webpBuffer, {
+              access: "public",
+              contentType: "image/webp",
+              allowOverwrite: true,
+              addRandomSuffix: false,
+            });
+
+            // Delete the original uploaded file
+            try {
+              await del(blob.url);
+            } catch {
+              // Ignore deletion errors for original file
+            }
+
+            finalUrl = webpBlob.url;
+          } catch (conversionError) {
+            // sharp could not process the image (unsupported format);
+            // keep the original uploaded blob as the avatar
+            console.warn("Sharp image conversion failed, using original:", conversionError);
+            finalUrl = blob.url;
           }
 
           // Get user's current avatar to clean up
@@ -76,11 +96,11 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // Update user record with the WebP URL
+          // Update user record with the avatar URL
           await db
             .update(users)
             .set({
-              avatarUrl: webpBlob.url,
+              avatarUrl: finalUrl,
               updatedAt: new Date(),
             })
             .where(eq(users.id, userId));

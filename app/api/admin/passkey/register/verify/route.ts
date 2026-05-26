@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { adminPasskeys } from "@/lib/db/schema";
 import { getAdminSession } from "@/lib/auth/session";
 import { getWebAuthnChallenge, deleteWebAuthnChallenge } from "@/lib/redis";
-import { rpID, origin, base64UrlEncode } from "@/lib/webauthn/config";
+import { rpID, expectedOrigins, base64UrlEncode } from "@/lib/webauthn/config";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const verification = await verifyRegistrationResponse({
       response: credential,
       expectedChallenge: challengeData.challenge,
-      expectedOrigin: origin,
+      expectedOrigin: expectedOrigins,
       expectedRPID: rpID,
     });
 

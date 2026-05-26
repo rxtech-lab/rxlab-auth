@@ -14,6 +14,7 @@ import {
   signIdToken,
   generateRefreshToken,
 } from "@/lib/oauth/jwt";
+import { issueOAuthTokenResponse } from "@/lib/oauth/issue-tokens";
 import { parseBasicAuth } from "@/lib/oauth/basic-auth";
 import { tokenRequestSchema } from "@/lib/validations/oauth";
 import { eq, and, isNull, or, gt } from "drizzle-orm";
@@ -146,6 +147,9 @@ export async function POST(request: NextRequest) {
     } else if (data.grant_type === "client_credentials") {
       console.log("Handling client credentials grant");
       return handleClientCredentialsGrant(data, client);
+    } else if (data.grant_type === "password") {
+      console.log("Handling password grant");
+      return handlePasswordGrant(data, client);
     }
 
     console.log("Unsupported grant type:", data);
@@ -457,4 +461,100 @@ async function handleClientCredentialsGrant(
     expires_in: 3600,
     scope: scopeString,
   });
+}
+
+async function handlePasswordGrant(
+  data: {
+    grant_type: "password";
+    username: string;
+    password: string;
+    client_id: string;
+    client_secret?: string;
+    scope?: string;
+  },
+  client: typeof oauthClients.$inferSelect,
+) {
+  // Gate to first-party clients with open sign-in only.
+  // password grant bypasses the web consent UI, so we refuse for any
+  // client that has restricted sign-in (none/whitelist).
+  if (client.signInPermission !== "all") {
+    return NextResponse.json(
+      {
+        error: "unauthorized_client",
+        error_description:
+          "password grant is only available for first-party clients",
+      },
+      { status: 400 },
+    );
+  }
+
+  // Resolve allowed scopes; default to client's allowed scopes when omitted
+  const allowedScopes: string[] = JSON.parse(client.allowedScopes);
+  let requestedScopes: string[];
+  if (data.scope) {
+    requestedScopes = data.scope.split(" ").filter(Boolean);
+    const invalidScopes = requestedScopes.filter(
+      (s) => !allowedScopes.includes(s),
+    );
+    if (invalidScopes.length > 0) {
+      return NextResponse.json(
+        {
+          error: "invalid_scope",
+          error_description: `Requested scope(s) not allowed: ${invalidScopes.join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
+  } else {
+    requestedScopes = allowedScopes;
+  }
+
+  // Look up user by email (preferred) or username field
+  const normalized = data.username.toLowerCase();
+  const user = await db.query.users.findFirst({
+    where: or(eq(users.email, normalized), eq(users.username, data.username)),
+  });
+
+  if (!user || !user.passwordHash) {
+    return NextResponse.json(
+      {
+        error: "invalid_grant",
+        error_description: "Invalid username or password",
+      },
+      { status: 400 },
+    );
+  }
+
+  const passwordValid = await verifyPassword(user.passwordHash, data.password);
+  if (!passwordValid) {
+    return NextResponse.json(
+      {
+        error: "invalid_grant",
+        error_description: "Invalid username or password",
+      },
+      { status: 400 },
+    );
+  }
+
+  // Enforce email verification (mirrors actions/auth/login.ts)
+  if (
+    !user.emailVerified &&
+    process.env.E2E_SKIP_EMAIL_VERIFICATION !== "true"
+  ) {
+    return NextResponse.json(
+      {
+        error: "invalid_grant",
+        error_description: "Email address is not verified",
+      },
+      { status: 400 },
+    );
+  }
+
+  const tokenResponse = await issueOAuthTokenResponse({
+    user,
+    client,
+    scopes: requestedScopes,
+  });
+
+  return NextResponse.json(tokenResponse);
 }

@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { users, passkeys } from "@/lib/db/schema";
 import { createSession } from "@/lib/auth/session";
 import { getWebAuthnChallenge, deleteWebAuthnChallenge } from "@/lib/redis";
-import { rpID, origin, base64UrlDecode } from "@/lib/webauthn/config";
+import { rpID, expectedOrigins, base64UrlDecode } from "@/lib/webauthn/config";
 import { eq } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     const verification = await verifyAuthenticationResponse({
       response: credential,
       expectedChallenge: challengeData.challenge,
-      expectedOrigin: origin,
+      expectedOrigin: expectedOrigins,
       expectedRPID: rpID,
       credential: {
         id: passkey.id, // base64url string

@@ -44,8 +44,21 @@ export interface OAuthCodeData {
 export interface WebAuthnChallengeData {
   challenge: string;
   userId?: string;
-  type: "registration" | "authentication";
+  type:
+    | "registration"
+    | "authentication"
+    | "native-registration"
+    | "native-authentication";
   createdAt: number;
+  // Native (OAuth) passkey flows pin the challenge to a specific client.
+  clientId?: string;
+  // Native passkey flows: redirect_uri the OPTIONS request validated against.
+  // Stored so VERIFY can re-validate it against the client's current
+  // redirect-URI allow-list (defense-in-depth).
+  redirectUri?: string;
+  // Native registration only: pending user-to-be-created
+  pendingEmail?: string;
+  pendingDisplayName?: string;
 }
 
 // Helper functions

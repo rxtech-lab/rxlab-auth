@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { handleAccountSelection } from "../fixtures/test-helpers";
 import * as crypto from "crypto";
 
 const ADMIN_PASSWORD = "e2e-test-admin-password";
@@ -98,6 +99,9 @@ test.describe("OAuth Public Client Flow", () => {
         `code_challenge_method=S256`
     );
 
+    // Handle account selection if shown
+    await handleAccountSelection(page);
+
     // Approve consent if shown
     const url = page.url();
     if (url.includes("/oauth/authorize")) {
@@ -168,6 +172,9 @@ test.describe("OAuth Public Client Flow", () => {
         `code_challenge=${codeChallenge}&` +
         `code_challenge_method=S256`
     );
+
+    // Handle account selection if shown
+    await handleAccountSelection(page);
 
     // Handle consent if needed
     const url = page.url();
@@ -247,6 +254,9 @@ test.describe("OAuth Public Client Flow", () => {
         `code_challenge=${codeChallenge}&` +
         `code_challenge_method=S256`
     );
+
+    // Handle account selection if shown
+    await handleAccountSelection(page);
 
     const url = page.url();
     if (url.includes("/oauth/authorize")) {

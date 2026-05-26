@@ -16,6 +16,10 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/account";
   const resetSuccess = searchParams.get("reset") === "true";
+  const registerHref =
+    redirectTo === "/account"
+      ? "/register"
+      : `/register?redirect=${encodeURIComponent(redirectTo)}`;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -168,7 +172,7 @@ export function LoginForm() {
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link
-          href="/register"
+          href={registerHref}
           className="text-primary hover:text-primary/80 transition-colors"
         >
           Sign up
