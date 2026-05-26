@@ -8,8 +8,12 @@ import { ClientForm } from "@/components/admin/client-form";
 import { IconUpload } from "@/components/admin/icon-upload";
 import { ClientSignInSettings } from "@/components/admin/client-sign-in-settings";
 import { ClientDangerZone } from "@/components/admin/client-danger-zone";
+import { ClientAppIdsCard } from "@/components/admin/client-app-ids-card";
 import { OAuthEndpointsCard } from "@/components/admin/oauth-endpoints-card";
-import type { OAuthClientEmailWhitelist } from "@/lib/db/schema";
+import type {
+  OAuthClientEmailWhitelist,
+  OAuthClientAppId,
+} from "@/lib/db/schema";
 
 interface ClientDetailTabsProps {
   client: {
@@ -23,6 +27,7 @@ interface ClientDetailTabsProps {
     signInPermission: string;
   };
   whitelistEmails: OAuthClientEmailWhitelist[];
+  appIds: OAuthClientAppId[];
   endpoints: {
     issuer: string;
     authorizationEndpoint: string;
@@ -39,7 +44,7 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]["id"];
 
-export function ClientDetailTabs({ client, whitelistEmails, endpoints }: ClientDetailTabsProps) {
+export function ClientDetailTabs({ client, whitelistEmails, appIds, endpoints }: ClientDetailTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("general");
 
   return (
@@ -112,6 +117,8 @@ export function ClientDetailTabs({ client, whitelistEmails, endpoints }: ClientD
               />
             </CardContent>
           </Card>
+
+          <ClientAppIdsCard clientId={client.id} initialAppIds={appIds} />
         </div>
       )}
 

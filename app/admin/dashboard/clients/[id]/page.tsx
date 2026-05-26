@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { oauthClients, oauthClientEmailWhitelist } from "@/lib/db/schema";
+import {
+  oauthClients,
+  oauthClientEmailWhitelist,
+  oauthClientAppIds,
+} from "@/lib/db/schema";
 import { ClientDetailTabs } from "@/components/admin/client-detail-tabs";
 import { getOpenIDConfiguration } from "@/lib/oauth/discovery";
 import { eq } from "drizzle-orm";
@@ -41,6 +45,11 @@ export default async function EditClientPage({ params }: PageProps) {
     orderBy: (table, { desc }) => [desc(table.createdAt)],
   });
 
+  const appIds = await db.query.oauthClientAppIds.findMany({
+    where: eq(oauthClientAppIds.clientId, id),
+    orderBy: (table, { desc }) => [desc(table.createdAt)],
+  });
+
   const config = getOpenIDConfiguration();
   const endpoints = {
     issuer: config.issuer,
@@ -53,6 +62,7 @@ export default async function EditClientPage({ params }: PageProps) {
     <ClientDetailTabs
       client={client}
       whitelistEmails={whitelistEmails}
+      appIds={appIds}
       endpoints={endpoints}
     />
   );
