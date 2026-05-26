@@ -61,6 +61,10 @@ test.describe("OAuth Account Selection", () => {
     await page.getByLabel("Email").fill(user.email);
     await page.getByLabel("Password").fill(user.password);
     await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page).toHaveURL("/account?setup=passkey");
+
+    // Dismiss passkey setup prompt
+    await page.getByTestId("skip-passkey-setup").click();
     await expect(page).toHaveURL("/account");
 
     // Logout and wait for redirect to login page
@@ -104,6 +108,10 @@ test.describe("OAuth Account Selection", () => {
     await page.getByLabel("Email").fill(user.email);
     await page.getByLabel("Password").fill(user.password);
     await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page).toHaveURL("/account?setup=passkey");
+
+    // Dismiss passkey setup prompt
+    await page.getByTestId("skip-passkey-setup").click();
     await expect(page).toHaveURL("/account");
 
     // Now start OAuth flow while already logged in
@@ -137,6 +145,10 @@ test.describe("OAuth Account Selection", () => {
     await page.getByLabel("Email").fill(user.email);
     await page.getByLabel("Password").fill(user.password);
     await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page).toHaveURL("/account?setup=passkey");
+
+    // Dismiss passkey setup prompt
+    await page.getByTestId("skip-passkey-setup").click();
     await expect(page).toHaveURL("/account");
 
     // Start OAuth flow while logged in
