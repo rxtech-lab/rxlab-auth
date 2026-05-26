@@ -39,6 +39,15 @@ export const tokenRequestSchema = z.discriminatedUnion("grant_type", [
     client_secret: z.string().min(1).optional(),
     scope: z.string().optional(),
   }),
+  // Resource Owner Password Credentials grant (public clients don't need client_secret)
+  z.object({
+    grant_type: z.literal("password"),
+    username: z.string().min(1, "username is required"),
+    password: z.string().min(1, "password is required"),
+    client_id: z.string().min(1, "client_id is required"),
+    client_secret: z.string().optional(),
+    scope: z.string().optional(),
+  }),
 ]);
 
 export const revokeRequestSchema = z.object({
