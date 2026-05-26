@@ -36,7 +36,8 @@ export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
       const result = await register({ email, password, displayName: displayName || undefined });
       if (result.success) {
         if (process.env.NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION === "true") {
-          router.push(redirectTo);
+          const target = redirectTo === "/account" ? "/account?setup=passkey" : redirectTo;
+          router.push(target);
         } else {
           router.push("/verify-email?sent=true");
         }

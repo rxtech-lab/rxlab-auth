@@ -35,6 +35,10 @@ test.describe("User ID Consistency", () => {
     await page.getByLabel("Email").fill(testUser.email);
     await page.getByLabel("Password").fill(testUser.password);
     await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page).toHaveURL("/account?setup=passkey");
+
+    // Dismiss passkey setup prompt
+    await page.getByTestId("skip-passkey-setup").click();
     await expect(page).toHaveURL("/account");
 
     // Logout

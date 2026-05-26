@@ -25,6 +25,10 @@ test.describe("OAuth Consent Flow", () => {
     await page.getByLabel("Email").fill(testUser.email);
     await page.getByLabel("Password").fill(testUser.password);
     await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page).toHaveURL("/account?setup=passkey");
+
+    // Dismiss passkey setup prompt
+    await page.getByTestId("skip-passkey-setup").click();
     await expect(page).toHaveURL("/account");
 
     // Logout
@@ -164,7 +168,7 @@ test.describe("OAuth Consent Flow", () => {
     await page.getByLabel("Email").fill(denyUser.email);
     await page.getByLabel("Password").fill(denyUser.password);
     await page.getByRole("button", { name: "Create account" }).click();
-    await expect(page).toHaveURL("/account");
+    await expect(page).toHaveURL("/account?setup=passkey");
 
     // Request authorization
     const state = `deny-state-${Date.now()}`;
@@ -211,7 +215,7 @@ test.describe("OAuth Consent Flow", () => {
     await page.getByLabel("Email").fill(revokeUser.email);
     await page.getByLabel("Password").fill(revokeUser.password);
     await page.getByRole("button", { name: "Create account" }).click();
-    await expect(page).toHaveURL("/account");
+    await expect(page).toHaveURL("/account?setup=passkey");
 
     // Request authorization and approve
     const codeChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";

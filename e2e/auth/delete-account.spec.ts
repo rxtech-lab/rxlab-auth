@@ -10,7 +10,7 @@ test.describe("Account Deletion", () => {
     await page.getByLabel("Email").fill(uniqueEmail);
     await page.getByLabel("Password").fill("TestPassword123!");
     await page.getByRole("button", { name: "Create account" }).click();
-    await expect(page).toHaveURL("/account");
+    await expect(page).toHaveURL("/account?setup=passkey");
 
     // Verify session is active
     const sessionResponse = await page.request.get("/api/auth/session");
@@ -51,7 +51,7 @@ test.describe("Account Deletion", () => {
     await page.getByLabel("Email").fill(uniqueEmail);
     await page.getByLabel("Password").fill("TestPassword123!");
     await page.getByRole("button", { name: "Create account" }).click();
-    await expect(page).toHaveURL("/account");
+    await expect(page).toHaveURL("/account?setup=passkey");
 
     // Delete account via API
     const deleteResponse = await page.request.delete("/api/auth/delete-account");
