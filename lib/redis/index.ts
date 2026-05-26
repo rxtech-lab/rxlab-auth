@@ -44,8 +44,17 @@ export interface OAuthCodeData {
 export interface WebAuthnChallengeData {
   challenge: string;
   userId?: string;
-  type: "registration" | "authentication";
+  type:
+    | "registration"
+    | "authentication"
+    | "native-registration"
+    | "native-authentication";
   createdAt: number;
+  // Native (OAuth) passkey flows pin the challenge to a specific client.
+  clientId?: string;
+  // Native registration only: pending user-to-be-created
+  pendingEmail?: string;
+  pendingDisplayName?: string;
 }
 
 // Helper functions

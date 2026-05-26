@@ -3,16 +3,11 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   oauthClients,
-  oauthRefreshTokens,
   users,
   emailVerificationTokens,
 } from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
-import {
-  signAccessToken,
-  signIdToken,
-  generateRefreshToken,
-} from "@/lib/oauth/jwt";
+import { issueOAuthTokenResponse } from "@/lib/oauth/issue-tokens";
 import { signupRequestSchema } from "@/lib/validations/oauth";
 import { checkSignUpAllowed } from "@/lib/settings/sign-up";
 import { generateAvatarSeed } from "@/lib/identicon/generate";
@@ -205,51 +200,19 @@ export async function POST(request: NextRequest) {
   }
 
   // E2E branch only: issue tokens identical to the authorization_code grant.
-  const scopeString = requestedScopes.join(" ");
-
-  const accessToken = await signAccessToken({
-    sub: userId,
-    client_id: client.id,
-    scope: scopeString,
-  });
-
-  let idToken: string | undefined;
-  if (requestedScopes.includes("openid")) {
-    idToken = await signIdToken(
-      {
-        sub: userId,
-        email: requestedScopes.includes("email") ? email : undefined,
-        email_verified: requestedScopes.includes("email") ? true : undefined,
-        name: displayName,
-        picture: `${process.env.OAUTH_ISSUER_URL}/api/avatar/${avatarSeed}`,
-        auth_time: Math.floor(Date.now() / 1000),
-      },
-      client.id,
-    );
-  }
-
-  const refreshToken = generateRefreshToken();
-  const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-  await db.insert(oauthRefreshTokens).values({
-    id: crypto.randomUUID(),
-    token: refreshToken,
-    userId,
-    clientId: client.id,
-    scopes: JSON.stringify(requestedScopes),
-    expiresAt: refreshExpiresAt,
-    createdAt: now,
-  });
-
-  return NextResponse.json(
-    {
-      access_token: accessToken,
-      token_type: "Bearer",
-      expires_in: 3600,
-      ...(idToken ? { id_token: idToken } : {}),
-      scope: scopeString,
-      refresh_token: refreshToken,
+  const tokenResponse = await issueOAuthTokenResponse({
+    user: {
+      id: userId,
+      email,
+      emailVerified: true,
+      displayName,
+      username: null,
+      avatarSeed,
+      avatarUrl: null,
     },
-    { status: 201 },
-  );
+    client,
+    scopes: requestedScopes,
+  });
+
+  return NextResponse.json(tokenResponse, { status: 201 });
 }

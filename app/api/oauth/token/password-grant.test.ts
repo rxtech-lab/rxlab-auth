@@ -67,6 +67,10 @@ mock.module("@/lib/oauth/jwt", () => ({
 mock.module("@/lib/redis", () => ({
   getOAuthCode: mock(),
   deleteOAuthCode: mock(),
+  storeOAuthCode: mock(),
+  getWebAuthnChallenge: mock(),
+  deleteWebAuthnChallenge: mock(),
+  storeWebAuthnChallenge: mock(),
 }));
 
 const { POST } = await import("./route");
