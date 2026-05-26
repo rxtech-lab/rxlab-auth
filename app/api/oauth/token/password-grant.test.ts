@@ -55,6 +55,7 @@ mock.module("@/lib/db", () => ({
 
 mock.module("@/lib/auth/password", () => ({
   verifyPassword: verifyPasswordMock,
+  hashPassword: mock(),
 }));
 
 mock.module("@/lib/oauth/jwt", () => ({
@@ -197,6 +198,45 @@ describe("POST /api/oauth/token - grant_type=password", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("invalid_grant");
+  });
+
+  test("unauthorized_client: rejects client with signInPermission != all", async () => {
+    findClient.mockResolvedValue({
+      ...VALID_CLIENT,
+      signInPermission: "whitelist",
+    });
+
+    const res = await POST(
+      makeRequest({
+        grant_type: "password",
+        username: "user@example.com",
+        password: "correct-horse",
+        client_id: VALID_CLIENT.id,
+      }) as never,
+    );
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("unauthorized_client");
+  });
+
+  test("invalid_grant: rejects user with unverified email", async () => {
+    delete process.env.E2E_SKIP_EMAIL_VERIFICATION;
+    findUser.mockResolvedValue({ ...VALID_USER, emailVerified: false });
+
+    const res = await POST(
+      makeRequest({
+        grant_type: "password",
+        username: "user@example.com",
+        password: "correct-horse",
+        client_id: VALID_CLIENT.id,
+      }) as never,
+    );
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("invalid_grant");
+    expect(body.error_description).toContain("not verified");
   });
 
   test("invalid_scope: rejects scopes outside client's allowed_scopes", async () => {

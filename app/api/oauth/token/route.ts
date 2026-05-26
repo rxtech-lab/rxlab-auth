@@ -17,7 +17,6 @@ import {
 import { parseBasicAuth } from "@/lib/oauth/basic-auth";
 import { tokenRequestSchema } from "@/lib/validations/oauth";
 import { eq, and, isNull, or, gt } from "drizzle-orm";
-import { oauthClientEmailWhitelist } from "@/lib/db/schema/oauth-clients";
 
 // Grace period for refresh token rotation (allows concurrent requests)
 const REFRESH_TOKEN_GRACE_PERIOD_MS = 30 * 1000; // 30 seconds
@@ -474,12 +473,15 @@ async function handlePasswordGrant(
   },
   client: typeof oauthClients.$inferSelect,
 ) {
-  // Enforce client sign-in permission (mirrors /api/oauth/authorize)
-  if (client.signInPermission === "none") {
+  // Gate to first-party clients with open sign-in only.
+  // password grant bypasses the web consent UI, so we refuse for any
+  // client that has restricted sign-in (none/whitelist).
+  if (client.signInPermission !== "all") {
     return NextResponse.json(
       {
         error: "unauthorized_client",
-        error_description: "Sign-in is disabled for this client",
+        error_description:
+          "password grant is only available for first-party clients",
       },
       { status: 400 },
     );
@@ -545,26 +547,6 @@ async function handlePasswordGrant(
       },
       { status: 400 },
     );
-  }
-
-  // Enforce per-client email whitelist when configured
-  if (client.signInPermission === "whitelist") {
-    const whitelistEntry = await db.query.oauthClientEmailWhitelist.findFirst({
-      where: and(
-        eq(oauthClientEmailWhitelist.clientId, client.id),
-        eq(oauthClientEmailWhitelist.email, user.email.toLowerCase()),
-      ),
-    });
-    if (!whitelistEntry) {
-      return NextResponse.json(
-        {
-          error: "unauthorized_client",
-          error_description:
-            "User is not authorized to sign in to this application",
-        },
-        { status: 400 },
-      );
-    }
   }
 
   const scopeString = requestedScopes.join(" ");

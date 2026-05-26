@@ -50,6 +50,20 @@ export const tokenRequestSchema = z.discriminatedUnion("grant_type", [
   }),
 ]);
 
+// Native sign-up request for first-party clients (POST /api/oauth/signup)
+export const signupRequestSchema = z.object({
+  client_id: z.string().min(1, "client_id is required"),
+  username: z.string().email("username must be a valid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(128, "Password must be less than 128 characters"),
+  name: z.string().min(1).max(64).optional(),
+  scope: z.string().optional(),
+});
+
+export type SignupRequest = z.infer<typeof signupRequestSchema>;
+
 export const revokeRequestSchema = z.object({
   token: z.string().min(1, "token is required"),
   token_type_hint: z.enum(["access_token", "refresh_token"]).optional(),
