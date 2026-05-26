@@ -12,7 +12,7 @@ import {
   parseTransports,
 } from "@/lib/webauthn/config";
 import { passkeyAuthOptionsRequestSchema } from "@/lib/validations/oauth";
-import { validateNativeClient } from "@/lib/oauth/native-client";
+import { validateClientRedirect } from "@/lib/oauth/native-client";
 
 // POST /api/oauth/passkey/authenticate/options
 //
@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const check = await validateNativeClient(parsed.data.client_id);
+  const check = await validateClientRedirect({
+    clientId: parsed.data.client_id,
+    redirectUri: parsed.data.redirect_uri,
+  });
   if (!check.ok) return check.response;
 
   const sessionId = crypto.randomUUID();
@@ -73,6 +76,7 @@ export async function POST(request: NextRequest) {
     challenge: authenticationOptions.challenge,
     type: "native-authentication",
     clientId: parsed.data.client_id,
+    redirectUri: parsed.data.redirect_uri,
     createdAt: Date.now(),
   };
   await storeWebAuthnChallenge(sessionId, challengeData);

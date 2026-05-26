@@ -4,11 +4,11 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, passkeys } from "@/lib/db/schema";
 import { getWebAuthnChallenge, deleteWebAuthnChallenge } from "@/lib/redis";
-import { rpID, origin, base64UrlEncode } from "@/lib/webauthn/config";
+import { rpID, expectedOrigins, base64UrlEncode } from "@/lib/webauthn/config";
 import { generateAvatarSeed } from "@/lib/identicon/generate";
 import { passkeyRegisterVerifyRequestSchema } from "@/lib/validations/oauth";
 import {
-  validateNativeClient,
+  validateClientRedirect,
   resolveRequestedScopes,
 } from "@/lib/oauth/native-client";
 import { issueOAuthTokenResponse } from "@/lib/oauth/issue-tokens";
@@ -46,14 +46,6 @@ export async function POST(request: NextRequest) {
   }
   const data = parsed.data;
 
-  const clientCheck = await validateNativeClient(data.client_id);
-  if (!clientCheck.ok) return clientCheck.response;
-  const client = clientCheck.client;
-
-  const scopeCheck = resolveRequestedScopes(data.scope, client);
-  if (!scopeCheck.ok) return scopeCheck.response;
-  const requestedScopes = scopeCheck.scopes;
-
   const challengeData = await getWebAuthnChallenge(data.session_id);
   if (
     !challengeData ||
@@ -70,6 +62,19 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  // Re-validate the redirect_uri persisted on the challenge against the
+  // client's current allow-list (defense-in-depth).
+  const clientCheck = await validateClientRedirect({
+    clientId: data.client_id,
+    redirectUri: challengeData.redirectUri,
+  });
+  if (!clientCheck.ok) return clientCheck.response;
+  const client = clientCheck.client;
+
+  const scopeCheck = resolveRequestedScopes(data.scope, client);
+  if (!scopeCheck.ok) return scopeCheck.response;
+  const requestedScopes = scopeCheck.scopes;
 
   // Re-check that the email wasn't taken between options and verify.
   const existing = await db.query.users.findFirst({
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
         typeof verifyRegistrationResponse
       >[0]["response"],
       expectedChallenge: challengeData.challenge,
-      expectedOrigin: origin,
+      expectedOrigin: expectedOrigins,
       expectedRPID: rpID,
     });
   } catch (error) {

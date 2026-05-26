@@ -4,10 +4,10 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, passkeys } from "@/lib/db/schema";
 import { getWebAuthnChallenge, deleteWebAuthnChallenge } from "@/lib/redis";
-import { rpID, origin, base64UrlDecode } from "@/lib/webauthn/config";
+import { rpID, expectedOrigins, base64UrlDecode } from "@/lib/webauthn/config";
 import { passkeyAuthVerifyRequestSchema } from "@/lib/validations/oauth";
 import {
-  validateNativeClient,
+  validateClientRedirect,
   resolveRequestedScopes,
 } from "@/lib/oauth/native-client";
 import { issueOAuthTokenResponse } from "@/lib/oauth/issue-tokens";
@@ -41,14 +41,6 @@ export async function POST(request: NextRequest) {
   }
   const data = parsed.data;
 
-  const clientCheck = await validateNativeClient(data.client_id);
-  if (!clientCheck.ok) return clientCheck.response;
-  const client = clientCheck.client;
-
-  const scopeCheck = resolveRequestedScopes(data.scope, client);
-  if (!scopeCheck.ok) return scopeCheck.response;
-  const requestedScopes = scopeCheck.scopes;
-
   const challengeData = await getWebAuthnChallenge(data.session_id);
   if (
     !challengeData ||
@@ -63,6 +55,20 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  // Re-validate the redirect_uri persisted on the challenge against the
+  // client's current allow-list (defense-in-depth: catches the case where
+  // the client's registered URIs were edited between options and verify).
+  const clientCheck = await validateClientRedirect({
+    clientId: data.client_id,
+    redirectUri: challengeData.redirectUri,
+  });
+  if (!clientCheck.ok) return clientCheck.response;
+  const client = clientCheck.client;
+
+  const scopeCheck = resolveRequestedScopes(data.scope, client);
+  if (!scopeCheck.ok) return scopeCheck.response;
+  const requestedScopes = scopeCheck.scopes;
 
   const passkey = await db.query.passkeys.findFirst({
     where: eq(passkeys.id, data.credential.id),
@@ -91,7 +97,7 @@ export async function POST(request: NextRequest) {
         typeof verifyAuthenticationResponse
       >[0]["response"],
       expectedChallenge: challengeData.challenge,
-      expectedOrigin: origin,
+      expectedOrigin: expectedOrigins,
       expectedRPID: rpID,
       credential: {
         id: passkey.id,

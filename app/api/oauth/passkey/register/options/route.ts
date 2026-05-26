@@ -9,7 +9,7 @@ import {
 } from "@/lib/redis";
 import { getRegistrationOptions } from "@/lib/webauthn/config";
 import { passkeyRegisterOptionsRequestSchema } from "@/lib/validations/oauth";
-import { validateNativeClient } from "@/lib/oauth/native-client";
+import { validateClientRedirect } from "@/lib/oauth/native-client";
 import { checkSignUpAllowed } from "@/lib/settings/sign-up";
 
 // POST /api/oauth/passkey/register/options
@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
   }
   const data = parsed.data;
 
-  const clientCheck = await validateNativeClient(data.client_id);
+  const clientCheck = await validateClientRedirect({
+    clientId: data.client_id,
+    redirectUri: data.redirect_uri,
+  });
   if (!clientCheck.ok) return clientCheck.response;
 
   const email = data.username.toLowerCase();
@@ -86,6 +89,7 @@ export async function POST(request: NextRequest) {
     userId: pendingUserId,
     type: "native-registration",
     clientId: data.client_id,
+    redirectUri: data.redirect_uri,
     pendingEmail: email,
     pendingDisplayName: displayName,
     createdAt: Date.now(),
