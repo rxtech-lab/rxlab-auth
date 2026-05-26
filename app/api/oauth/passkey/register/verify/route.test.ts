@@ -19,11 +19,14 @@ const VALID_CLIENT = {
 const PENDING_USER_ID = "pending-user-id";
 const PENDING_EMAIL = "newbie@example.com";
 
+const VALID_REDIRECT_URI = "rxauthswift://callback";
+
 const VALID_CHALLENGE = {
   challenge: "challenge-stub",
   userId: PENDING_USER_ID,
   type: "native-registration" as const,
   clientId: VALID_CLIENT.id,
+  redirectUri: VALID_REDIRECT_URI,
   pendingEmail: PENDING_EMAIL,
   pendingDisplayName: "Newbie",
   createdAt: Date.now(),
@@ -172,14 +175,16 @@ describe("POST /api/oauth/passkey/register/verify", () => {
     expect((await res.json()).error).toBe("invalid_client");
   });
 
-  test("unauthorized_client: rejects client with signInPermission != all", async () => {
+  test("invalid_request: stored redirect_uri no longer in client's allow-list", async () => {
     findClient.mockResolvedValue({
       ...VALID_CLIENT,
-      signInPermission: "none",
+      redirectUris: JSON.stringify(["some://other-callback"]),
     });
     const res = await POST(makeRequest(VALID_BODY) as never);
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toBe("unauthorized_client");
+    const body = await res.json();
+    expect(body.error).toBe("invalid_request");
+    expect(body.error_description).toBe("Invalid redirect_uri for client");
   });
 
   test("invalid_grant: missing challenge for session_id", async () => {

@@ -312,6 +312,7 @@ describe("passkeyAuthOptionsRequestSchema", () => {
   test("accepts minimal body", () => {
     const result = passkeyAuthOptionsRequestSchema.safeParse({
       client_id: "macos-test-app",
+      redirect_uri: "rxauthswift://callback",
     });
     expect(result.success).toBe(true);
   });
@@ -319,6 +320,7 @@ describe("passkeyAuthOptionsRequestSchema", () => {
   test("accepts optional username (email)", () => {
     const result = passkeyAuthOptionsRequestSchema.safeParse({
       client_id: "macos-test-app",
+      redirect_uri: "rxauthswift://callback",
       username: "user@example.com",
     });
     expect(result.success).toBe(true);
@@ -327,13 +329,23 @@ describe("passkeyAuthOptionsRequestSchema", () => {
   test("rejects non-email username", () => {
     const result = passkeyAuthOptionsRequestSchema.safeParse({
       client_id: "macos-test-app",
+      redirect_uri: "rxauthswift://callback",
       username: "not-an-email",
     });
     expect(result.success).toBe(false);
   });
 
   test("rejects missing client_id", () => {
-    const result = passkeyAuthOptionsRequestSchema.safeParse({});
+    const result = passkeyAuthOptionsRequestSchema.safeParse({
+      redirect_uri: "rxauthswift://callback",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects missing redirect_uri", () => {
+    const result = passkeyAuthOptionsRequestSchema.safeParse({
+      client_id: "macos-test-app",
+    });
     expect(result.success).toBe(false);
   });
 });
@@ -371,6 +383,7 @@ describe("passkeyRegisterOptionsRequestSchema", () => {
   test("accepts minimal body", () => {
     const result = passkeyRegisterOptionsRequestSchema.safeParse({
       client_id: "macos-test-app",
+      redirect_uri: "rxauthswift://callback",
       username: "user@example.com",
     });
     expect(result.success).toBe(true);
@@ -379,6 +392,7 @@ describe("passkeyRegisterOptionsRequestSchema", () => {
   test("rejects non-email username", () => {
     const result = passkeyRegisterOptionsRequestSchema.safeParse({
       client_id: "macos-test-app",
+      redirect_uri: "rxauthswift://callback",
       username: "not-an-email",
     });
     expect(result.success).toBe(false);
@@ -386,6 +400,15 @@ describe("passkeyRegisterOptionsRequestSchema", () => {
 
   test("rejects missing client_id", () => {
     const result = passkeyRegisterOptionsRequestSchema.safeParse({
+      redirect_uri: "rxauthswift://callback",
+      username: "user@example.com",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects missing redirect_uri", () => {
+    const result = passkeyRegisterOptionsRequestSchema.safeParse({
+      client_id: "macos-test-app",
       username: "user@example.com",
     });
     expect(result.success).toBe(false);

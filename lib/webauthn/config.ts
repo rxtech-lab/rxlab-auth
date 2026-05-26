@@ -7,6 +7,26 @@ export const rpID = process.env.WEBAUTHN_RP_ID || "localhost";
 export const rpName = process.env.WEBAUTHN_RP_NAME || "RxLab Auth";
 export const origin = process.env.WEBAUTHN_ORIGIN || "http://localhost:3000";
 
+// Origins SimpleWebAuthn's verify functions will accept.
+//
+// Always includes the configured web origin (e.g. https://auth.rxlab.app).
+// Also includes https://<rpID> (e.g. https://rxlab.app) when the rpID is a
+// real registrable domain — native iOS/macOS apps using an Associated Domain
+// of webcredentials:<rpID> set the WebAuthn origin in clientDataJSON to that
+// bare-rpId URL, not the server's subdomain. Dedupes; skips for localhost.
+export function computeExpectedOrigins(
+  configuredOrigin: string,
+  rpId: string,
+): string[] {
+  const set = new Set<string>([configuredOrigin]);
+  if (rpId && rpId !== "localhost" && rpId.includes(".")) {
+    set.add(`https://${rpId}`);
+  }
+  return [...set];
+}
+
+export const expectedOrigins: string[] = computeExpectedOrigins(origin, rpID);
+
 export function getRegistrationOptions(
   userId: string,
   userEmail: string,

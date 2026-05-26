@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { oauthClients } from "@/lib/db/schema";
+import { matchRedirectUri } from "@/lib/oauth/redirect-uri";
 
 type Client = typeof oauthClients.$inferSelect;
 
@@ -38,6 +39,59 @@ export async function validateNativeClient(
           error: "unauthorized_client",
           error_description:
             "Native flows are only available for first-party clients",
+        },
+        { status: 400 },
+      ),
+    };
+  }
+  return { ok: true, client };
+}
+
+// Validate that a client exists and that the supplied redirect_uri is one
+// the client has registered. Used by passkey native routes — instead of
+// requiring `signInPermission === "all"`, we trust the client's registered
+// redirect-URI allow-list (same gate authorization_code already uses, see
+// app/api/oauth/authorize/route.ts:78-87).
+//
+// On unknown client: 401 invalid_client.
+// On missing or unregistered redirect_uri: 400 invalid_request.
+export async function validateClientRedirect(params: {
+  clientId: string;
+  redirectUri: string | undefined;
+}): Promise<NativeClientCheck> {
+  const { clientId, redirectUri } = params;
+  const client = await db.query.oauthClients.findFirst({
+    where: eq(oauthClients.id, clientId),
+  });
+  if (!client) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "invalid_client", error_description: "Client not found" },
+        { status: 401 },
+      ),
+    };
+  }
+  if (!redirectUri) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "invalid_request",
+          error_description: "Invalid redirect_uri for client",
+        },
+        { status: 400 },
+      ),
+    };
+  }
+  const allowed: string[] = JSON.parse(client.redirectUris);
+  if (!matchRedirectUri(redirectUri, allowed)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "invalid_request",
+          error_description: "Invalid redirect_uri for client",
         },
         { status: 400 },
       ),

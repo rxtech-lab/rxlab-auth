@@ -104,6 +104,7 @@ export const passkeyAttestationSchema = z
 // POST /api/oauth/passkey/authenticate/options
 export const passkeyAuthOptionsRequestSchema = z.object({
   client_id: z.string().min(1, "client_id is required"),
+  redirect_uri: z.string().min(1, "redirect_uri is required"),
   username: z.string().email().optional(),
 });
 
@@ -118,6 +119,7 @@ export const passkeyAuthVerifyRequestSchema = z.object({
 // POST /api/oauth/passkey/register/options
 export const passkeyRegisterOptionsRequestSchema = z.object({
   client_id: z.string().min(1, "client_id is required"),
+  redirect_uri: z.string().min(1, "redirect_uri is required"),
   username: z.string().email("username must be a valid email address"),
   name: z.string().min(1).max(64).optional(),
 });

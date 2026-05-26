@@ -42,10 +42,13 @@ const VALID_PASSKEY = {
   lastUsedAt: null,
 };
 
+const VALID_REDIRECT_URI = "rxauthswift://callback";
+
 const VALID_CHALLENGE = {
   challenge: "challenge-stub",
   type: "native-authentication" as const,
   clientId: VALID_CLIENT.id,
+  redirectUri: VALID_REDIRECT_URI,
   createdAt: Date.now(),
 };
 
@@ -175,14 +178,25 @@ describe("POST /api/oauth/passkey/authenticate/verify", () => {
     expect((await res.json()).error).toBe("invalid_client");
   });
 
-  test("unauthorized_client: rejects client with signInPermission != all", async () => {
+  test("invalid_request: stored redirect_uri no longer in client's allow-list", async () => {
+    // Simulates admin removing the URI from the client between options & verify.
     findClient.mockResolvedValue({
       ...VALID_CLIENT,
-      signInPermission: "whitelist",
+      redirectUris: JSON.stringify(["some://other-callback"]),
     });
     const res = await POST(makeRequest(VALID_BODY) as never);
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toBe("unauthorized_client");
+    const body = await res.json();
+    expect(body.error).toBe("invalid_request");
+    expect(body.error_description).toBe("Invalid redirect_uri for client");
+  });
+
+  test("invalid_request: challenge has no redirectUri (older / corrupt)", async () => {
+    getChallengeMock.mockResolvedValue({ ...VALID_CHALLENGE, redirectUri: undefined });
+    const res = await POST(makeRequest(VALID_BODY) as never);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("invalid_request");
   });
 
   test("invalid_grant: no challenge stored for session_id", async () => {
@@ -224,6 +238,31 @@ describe("POST /api/oauth/passkey/authenticate/verify", () => {
     const res = await POST(makeRequest(VALID_BODY) as never);
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("invalid_grant");
+  });
+
+  test("happy path: native macOS assertion with bare-rpId origin verifies", async () => {
+    // Simulate iOS/macOS native flow where ASAuthorizationServices sets the
+    // WebAuthn origin in clientDataJSON to the bare rpId origin
+    // (e.g. https://rxlab.app) rather than the server's subdomain.
+    // The route should pass an array of expected origins to SimpleWebAuthn,
+    // so the bare-rpId origin is accepted.
+    let capturedExpectedOrigin: unknown;
+    verifyAuthenticationResponseMock.mockImplementation(
+      async (args: { expectedOrigin: unknown }) => {
+        capturedExpectedOrigin = args.expectedOrigin;
+        return {
+          verified: true,
+          authenticationInfo: { newCounter: 1 },
+        };
+      },
+    );
+
+    const res = await POST(makeRequest(VALID_BODY) as never);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(capturedExpectedOrigin)).toBe(true);
+    expect(capturedExpectedOrigin as string[]).toContain(
+      "http://localhost:3000",
+    );
   });
 
   test("invalid_scope: scope outside client's allowed_scopes", async () => {
