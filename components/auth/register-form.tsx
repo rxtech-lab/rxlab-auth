@@ -24,6 +24,7 @@ export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
       : `/login?redirect=${encodeURIComponent(redirectTo)}`;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -33,7 +34,7 @@ export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
     setError(null);
 
     startTransition(async () => {
-      const result = await register({ email, password, displayName: displayName || undefined });
+      const result = await register({ email, password, confirmPassword, displayName: displayName || undefined });
       if (result.success) {
         if (process.env.NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION === "true") {
           const target = redirectTo === "/account" ? "/account?setup=passkey" : redirectTo;
@@ -119,6 +120,19 @@ export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
           <p className="text-xs text-muted-foreground">
             Must be at least 8 characters long
           </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="Repeat your password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            disabled={isPending}
+          />
         </div>
 
         <Button type="submit" className="w-full" disabled={isPending}>

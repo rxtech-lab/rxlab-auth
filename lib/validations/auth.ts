@@ -27,7 +27,11 @@ export const displayNameSchema = z
 export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
+  confirmPassword: z.string(),
   displayName: displayNameSchema.optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 export const loginSchema = z.object({
