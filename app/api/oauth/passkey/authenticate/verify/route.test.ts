@@ -243,7 +243,7 @@ describe("POST /api/oauth/passkey/authenticate/verify", () => {
   test("happy path: native macOS assertion with bare-rpId origin verifies", async () => {
     // Simulate iOS/macOS native flow where ASAuthorizationServices sets the
     // WebAuthn origin in clientDataJSON to the bare rpId origin
-    // (e.g. https://rxlab.app) rather than the server's subdomain.
+    // (e.g. https://auth.rxlab.app) rather than the server's subdomain.
     // The route should pass an array of expected origins to SimpleWebAuthn,
     // so the bare-rpId origin is accepted.
     let capturedExpectedOrigin: unknown;

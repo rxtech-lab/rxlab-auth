@@ -91,7 +91,7 @@ describe("POST /api/oauth/passkey/upgrade/options", () => {
     storeChallengeMock.mockResolvedValue(undefined);
     generateRegistrationOptionsMock.mockResolvedValue({
       challenge: "challenge-stub",
-      rp: { id: "rxlab.app", name: "RxLab Auth" },
+      rp: { id: "auth.rxlab.app", name: "RxLab Auth" },
       user: { id: "uid", name: USER_EMAIL, displayName: "User One" },
       pubKeyCredParams: [],
       attestation: "none",

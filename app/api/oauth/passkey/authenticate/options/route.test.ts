@@ -75,7 +75,7 @@ describe("POST /api/oauth/passkey/authenticate/options", () => {
     storeChallengeMock.mockResolvedValue(undefined);
     generateAuthenticationOptionsMock.mockResolvedValue({
       challenge: "challenge-stub",
-      rpId: "rxlab.app",
+      rpId: "auth.rxlab.app",
       allowCredentials: [],
       timeout: 60000,
       userVerification: "preferred",

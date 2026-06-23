@@ -78,7 +78,7 @@ describe("POST /api/oauth/passkey/register/options", () => {
     checkSignUpAllowedMock.mockResolvedValue({ allowed: true });
     generateRegistrationOptionsMock.mockResolvedValue({
       challenge: "challenge-stub",
-      rp: { id: "rxlab.app", name: "RxLab Auth" },
+      rp: { id: "auth.rxlab.app", name: "RxLab Auth" },
       user: { id: "uid", name: "user@example.com", displayName: "user" },
       pubKeyCredParams: [],
       attestation: "none",
