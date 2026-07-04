@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { desc, sql } from "drizzle-orm";
+import { oauthClients, oauthClientRoles, users } from "@/lib/db/schema";
+import { asc, desc, sql } from "drizzle-orm";
 import { PageHeader } from "@/components/dashboard";
 import { UserList } from "@/components/admin/user-list";
+import type { UserRoleOptionApp } from "@/components/admin/user-role-assignments";
 
 export const metadata = {
   title: "Users - Admin",
@@ -36,6 +37,41 @@ export default async function UsersPage() {
   const nextCursor =
     hasMore && lastUser ? encodeCursor(lastUser.createdAt, lastUser.id) : null;
 
+  const clients = await db
+    .select({
+      id: oauthClients.id,
+      name: oauthClients.name,
+    })
+    .from(oauthClients)
+    .orderBy(asc(oauthClients.name));
+
+  const roles = await db
+    .select({
+      id: oauthClientRoles.id,
+      clientId: oauthClientRoles.clientId,
+      key: oauthClientRoles.key,
+      name: oauthClientRoles.name,
+    })
+    .from(oauthClientRoles)
+    .orderBy(asc(oauthClientRoles.name));
+
+  const rolesByClient = new Map<string, UserRoleOptionApp["roles"]>();
+  for (const role of roles) {
+    const clientRoles = rolesByClient.get(role.clientId) ?? [];
+    clientRoles.push({
+      id: role.id,
+      key: role.key,
+      name: role.name,
+    });
+    rolesByClient.set(role.clientId, clientRoles);
+  }
+
+  const roleOptions: UserRoleOptionApp[] = clients.map((client) => ({
+    id: client.id,
+    name: client.name,
+    roles: rolesByClient.get(client.id) ?? [],
+  }));
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -47,6 +83,7 @@ export default async function UsersPage() {
         initialUsers={displayUsers}
         initialCursor={nextCursor}
         totalCount={count}
+        roleOptions={roleOptions}
       />
     </div>
   );

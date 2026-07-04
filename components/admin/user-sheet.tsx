@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Mail, Lock, User as UserIcon, AtSign } from "lucide-react";
 import {
@@ -17,24 +17,38 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { createUser } from "@/actions/admin/users/create";
 import { updateUser } from "@/actions/admin/users/update";
+import { setUserRoleAssignments } from "@/actions/admin/users/roles";
 import type { User } from "@/lib/db/schema";
+import {
+  UserRoleAssignments,
+  type UserRoleAssignmentValue,
+  type UserRoleOptionApp,
+} from "@/components/admin/user-role-assignments";
 
 interface UserSheetProps {
   mode: "create" | "edit";
   user?: User;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  roleOptions: UserRoleOptionApp[];
   onSuccess?: (user?: User) => void;
 }
 
 interface UserFormProps {
   mode: "create" | "edit";
   user?: User;
+  roleOptions: UserRoleOptionApp[];
   onSuccess?: (user?: User) => void;
   onOpenChange: (open: boolean) => void;
 }
 
-function UserForm({ mode, user, onSuccess, onOpenChange }: UserFormProps) {
+function UserForm({
+  mode,
+  user,
+  roleOptions,
+  onSuccess,
+  onOpenChange,
+}: UserFormProps) {
   const [email, setEmail] = useState(
     mode === "edit" && user ? user.email : ""
   );
@@ -48,8 +62,19 @@ function UserForm({ mode, user, onSuccess, onOpenChange }: UserFormProps) {
   const [emailVerified, setEmailVerified] = useState<boolean>(
     mode === "edit" && user ? (user.emailVerified ?? false) : false
   );
+  const [roleAssignments, setRoleAssignments] = useState<
+    UserRoleAssignmentValue[]
+  >([]);
+  const [rolesLoading, setRolesLoading] = useState(mode === "edit");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const handleRoleAssignmentsChange = useCallback(
+    (assignments: UserRoleAssignmentValue[]) => {
+      setRoleAssignments(assignments);
+    },
+    []
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +97,11 @@ function UserForm({ mode, user, onSuccess, onOpenChange }: UserFormProps) {
           setError(result.error || "Failed to create user");
         }
       } else if (user) {
+        if (rolesLoading) {
+          setError("Wait for roles to finish loading");
+          return;
+        }
+
         const result = await updateUser(user.id, {
           email: email !== user.email ? email : undefined,
           password: password || null,
@@ -80,12 +110,23 @@ function UserForm({ mode, user, onSuccess, onOpenChange }: UserFormProps) {
           emailVerified,
         });
 
-        if (result.success) {
-          onOpenChange(false);
-          onSuccess?.(result.user);
-        } else {
+        if (!result.success) {
           setError(result.error || "Failed to update user");
+          return;
         }
+
+        const roleResult = await setUserRoleAssignments({
+          userId: user.id,
+          assignments: roleAssignments,
+        });
+
+        if (!roleResult.success) {
+          setError(roleResult.error || "Failed to update user roles");
+          return;
+        }
+
+        onOpenChange(false);
+        onSuccess?.(result.user);
       }
     });
   };
@@ -198,10 +239,20 @@ function UserForm({ mode, user, onSuccess, onOpenChange }: UserFormProps) {
         />
       </div>
 
+      {mode === "edit" && user && (
+        <UserRoleAssignments
+          userId={user.id}
+          apps={roleOptions}
+          disabled={isPending}
+          onChange={handleRoleAssignmentsChange}
+          onLoadingChange={setRolesLoading}
+        />
+      )}
+
       <SheetFooter className="p-0 mt-4">
         <Button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || rolesLoading}
           data-testid="user-submit-button"
         >
           {isPending ? (
@@ -225,6 +276,7 @@ export function UserSheet({
   user,
   open,
   onOpenChange,
+  roleOptions,
   onSuccess,
 }: UserSheetProps) {
   // Use key to reset form state when mode or user changes
@@ -249,6 +301,7 @@ export function UserSheet({
             key={formKey}
             mode={mode}
             user={user}
+            roleOptions={roleOptions}
             onSuccess={onSuccess}
             onOpenChange={onOpenChange}
           />

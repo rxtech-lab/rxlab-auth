@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { oauthConsents, users } from "@/lib/db/schema";
 import { verifyAccessToken } from "@/lib/oauth/jwt";
+import { getUserRoleKeys } from "@/lib/oauth/roles";
 import { and, eq } from "drizzle-orm";
 
 async function handleUserInfo(request: NextRequest) {
@@ -48,6 +49,7 @@ async function handleUserInfo(request: NextRequest) {
       ),
     });
     const grantedScopes: string[] = consent ? JSON.parse(consent.scopes) : [];
+    const roles = await getUserRoleKeys(user.id, payload.client_id);
 
     // Build response - always include profile, email requires scope from DB
     const response: Record<string, unknown> = {
@@ -56,6 +58,7 @@ async function handleUserInfo(request: NextRequest) {
       name: user.displayName,
       preferred_username: user.username,
       picture: user.avatarUrl || `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
+      roles,
     };
 
     if (grantedScopes.includes("email")) {

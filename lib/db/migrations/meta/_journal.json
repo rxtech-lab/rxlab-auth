@@ -50,6 +50,13 @@
       "when": 1779778803950,
       "tag": "0006_familiar_mandarin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1783180400054,
+      "tag": "0007_app_scoped_roles",
+      "breakpoints": true
     }
   ]
 }

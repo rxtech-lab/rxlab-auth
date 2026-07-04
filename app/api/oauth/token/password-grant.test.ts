@@ -39,6 +39,7 @@ const verifyPasswordMock = mock();
 const signAccessTokenMock = mock();
 const signIdTokenMock = mock();
 const generateRefreshTokenMock = mock();
+const getUserRoleKeysMock = mock();
 const insertValues = mock();
 
 mock.module("@/lib/db", () => ({
@@ -63,6 +64,10 @@ mock.module("@/lib/oauth/jwt", () => ({
   signIdToken: signIdTokenMock,
   generateRefreshToken: generateRefreshTokenMock,
   verifyAccessToken: mock(),
+}));
+
+mock.module("@/lib/oauth/roles", () => ({
+  getUserRoleKeys: getUserRoleKeysMock,
 }));
 
 mock.module("@/lib/redis", () => ({
@@ -95,6 +100,7 @@ describe("POST /api/oauth/token - grant_type=password", () => {
     signAccessTokenMock.mockReset();
     signIdTokenMock.mockReset();
     generateRefreshTokenMock.mockReset();
+    getUserRoleKeysMock.mockReset();
     insertValues.mockReset();
 
     findClient.mockResolvedValue(VALID_CLIENT);
@@ -105,6 +111,7 @@ describe("POST /api/oauth/token - grant_type=password", () => {
     signAccessTokenMock.mockResolvedValue("access-token-stub");
     signIdTokenMock.mockResolvedValue("id-token-stub");
     generateRefreshTokenMock.mockReturnValue("refresh-token-stub");
+    getUserRoleKeysMock.mockResolvedValue(["admin"]);
     insertValues.mockResolvedValue(undefined);
   });
 
@@ -131,6 +138,7 @@ describe("POST /api/oauth/token - grant_type=password", () => {
       "correct-horse",
     );
     expect(insertValues).toHaveBeenCalled();
+    expect(signAccessTokenMock.mock.calls[0][0].roles).toEqual(["admin"]);
   });
 
   test("happy path: omits id_token when openid scope not requested", async () => {

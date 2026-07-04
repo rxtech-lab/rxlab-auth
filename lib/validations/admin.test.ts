@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+  createClientRoleSchema,
   createOAuthClientSchema,
   createUserSchema,
+  setUserRolesSchema,
   updateUserSchema,
 } from "./admin";
 
@@ -233,5 +235,41 @@ describe("createOAuthClientSchema redirect URI validation", () => {
       redirectUris: ["not-a-url"],
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("client role schemas", () => {
+  test("should accept valid role keys and names", () => {
+    const result = createClientRoleSchema.safeParse({
+      clientId: "client_123",
+      key: "admin_user",
+      name: "Admin User",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test("should reject invalid role keys", () => {
+    const result = createClientRoleSchema.safeParse({
+      clientId: "client_123",
+      key: "Admin User",
+      name: "Admin User",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  test("should accept role assignments grouped by app", () => {
+    const result = setUserRolesSchema.safeParse({
+      userId: "user_123",
+      assignments: [
+        {
+          clientId: "client_123",
+          roleIds: ["role_1", "role_2"],
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
   });
 });

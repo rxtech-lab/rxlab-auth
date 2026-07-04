@@ -5,6 +5,7 @@ import {
   signIdToken,
   generateRefreshToken,
 } from "@/lib/oauth/jwt";
+import { getUserRoleKeys } from "@/lib/oauth/roles";
 
 const ACCESS_TOKEN_EXPIRES_IN = 3600;
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -44,11 +45,13 @@ export async function issueOAuthTokenResponse(params: {
 }): Promise<OAuthTokenResponse> {
   const { user, client, scopes } = params;
   const scopeString = scopes.join(" ");
+  const roles = await getUserRoleKeys(user.id, client.id);
 
   const accessToken = await signAccessToken({
     sub: user.id,
     client_id: client.id,
     scope: scopeString,
+    roles,
   });
 
   let idToken: string | undefined;
@@ -65,6 +68,7 @@ export async function issueOAuthTokenResponse(params: {
         picture:
           user.avatarUrl ||
           `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
+        roles,
         auth_time: Math.floor(Date.now() / 1000),
       },
       client.id,

@@ -7,6 +7,7 @@ export * from "./password-reset-tokens";
 // OAuth-related schemas
 export * from "./oauth-clients";
 export * from "./oauth-client-app-ids";
+export * from "./oauth-client-roles";
 export * from "./oauth-consents";
 export * from "./oauth-refresh-tokens";
 

@@ -33,6 +33,7 @@ export interface AccessTokenPayload {
   sub: string; // user ID
   client_id: string;
   scope: string;
+  roles?: string[];
 }
 
 export interface IdTokenPayload {
@@ -42,6 +43,7 @@ export interface IdTokenPayload {
   name?: string;
   preferred_username?: string;
   picture?: string;
+  roles?: string[];
   nonce?: string;
   auth_time: number;
 }

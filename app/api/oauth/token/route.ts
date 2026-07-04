@@ -15,6 +15,7 @@ import {
   generateRefreshToken,
 } from "@/lib/oauth/jwt";
 import { issueOAuthTokenResponse } from "@/lib/oauth/issue-tokens";
+import { getUserRoleKeys } from "@/lib/oauth/roles";
 import { parseBasicAuth } from "@/lib/oauth/basic-auth";
 import { tokenRequestSchema } from "@/lib/validations/oauth";
 import { eq, and, isNull, or, gt } from "drizzle-orm";
@@ -247,11 +248,13 @@ async function handleAuthorizationCodeGrant(
 
   // Generate tokens
   const scopeString = codeData.scopes.join(" ");
+  const roles = await getUserRoleKeys(user.id, client.id);
 
   const accessToken = await signAccessToken({
     sub: user.id,
     client_id: client.id,
     scope: scopeString,
+    roles,
   });
 
   const idToken = await signIdToken(
@@ -266,6 +269,7 @@ async function handleAuthorizationCodeGrant(
       name: user.displayName ?? undefined,
       preferred_username: user.username ?? undefined,
       picture: user.avatarUrl || `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
+      roles,
       nonce: codeData.nonce,
       auth_time: Math.floor(Date.now() / 1000),
     },
@@ -371,12 +375,14 @@ async function handleRefreshTokenGrant(
   }
 
   const scopeString = requestedScopes.join(" ");
+  const roles = await getUserRoleKeys(user.id, client.id);
 
   // Generate new access token
   const accessToken = await signAccessToken({
     sub: user.id,
     client_id: client.id,
     scope: scopeString,
+    roles,
   });
 
   // Rotate refresh token
