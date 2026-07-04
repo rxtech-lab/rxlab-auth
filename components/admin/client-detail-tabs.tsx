@@ -9,8 +9,10 @@ import { IconUpload } from "@/components/admin/icon-upload";
 import { ClientSignInSettings } from "@/components/admin/client-sign-in-settings";
 import { ClientDangerZone } from "@/components/admin/client-danger-zone";
 import { ClientAppIdsCard } from "@/components/admin/client-app-ids-card";
+import { ClientRolesCard } from "@/components/admin/client-roles-card";
 import { OAuthEndpointsCard } from "@/components/admin/oauth-endpoints-card";
 import type {
+  OAuthClientRole,
   OAuthClientEmailWhitelist,
   OAuthClientAppId,
 } from "@/lib/db/schema";
@@ -28,6 +30,7 @@ interface ClientDetailTabsProps {
   };
   whitelistEmails: OAuthClientEmailWhitelist[];
   appIds: OAuthClientAppId[];
+  roles: OAuthClientRole[];
   endpoints: {
     issuer: string;
     authorizationEndpoint: string;
@@ -44,7 +47,7 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]["id"];
 
-export function ClientDetailTabs({ client, whitelistEmails, appIds, endpoints }: ClientDetailTabsProps) {
+export function ClientDetailTabs({ client, whitelistEmails, appIds, roles, endpoints }: ClientDetailTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("general");
 
   return (
@@ -129,6 +132,7 @@ export function ClientDetailTabs({ client, whitelistEmails, appIds, endpoints }:
             initialPermission={client.signInPermission as "all" | "none" | "whitelist"}
             initialEmails={whitelistEmails}
           />
+          <ClientRolesCard clientId={client.id} initialRoles={roles} />
         </div>
       )}
 

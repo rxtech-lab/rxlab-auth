@@ -4,6 +4,7 @@ import {
   oauthClients,
   oauthClientEmailWhitelist,
   oauthClientAppIds,
+  oauthClientRoles,
 } from "@/lib/db/schema";
 import { ClientDetailTabs } from "@/components/admin/client-detail-tabs";
 import { getOpenIDConfiguration } from "@/lib/oauth/discovery";
@@ -50,6 +51,11 @@ export default async function EditClientPage({ params }: PageProps) {
     orderBy: (table, { desc }) => [desc(table.createdAt)],
   });
 
+  const roles = await db.query.oauthClientRoles.findMany({
+    where: eq(oauthClientRoles.clientId, id),
+    orderBy: (table, { asc }) => [asc(table.name)],
+  });
+
   const config = getOpenIDConfiguration();
   const endpoints = {
     issuer: config.issuer,
@@ -63,6 +69,7 @@ export default async function EditClientPage({ params }: PageProps) {
       client={client}
       whitelistEmails={whitelistEmails}
       appIds={appIds}
+      roles={roles}
       endpoints={endpoints}
     />
   );

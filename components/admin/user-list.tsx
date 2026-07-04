@@ -16,17 +16,20 @@ import { UserSheet } from "@/components/admin/user-sheet";
 import { getUsers } from "@/actions/admin/users/list";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { User } from "@/lib/db/schema";
+import type { UserRoleOptionApp } from "@/components/admin/user-role-assignments";
 
 interface UserListProps {
   initialUsers: User[];
   initialCursor: string | null;
   totalCount: number;
+  roleOptions: UserRoleOptionApp[];
 }
 
 export function UserList({
   initialUsers,
   initialCursor,
   totalCount: initialTotalCount,
+  roleOptions,
 }: UserListProps) {
   const [users, setUsers] = useState(initialUsers);
   const [cursor, setCursor] = useState(initialCursor);
@@ -243,6 +246,7 @@ export function UserList({
         user={editingUser}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+        roleOptions={roleOptions}
         onSuccess={
           sheetMode === "create" ? handleUserCreated : handleUserUpdated
         }

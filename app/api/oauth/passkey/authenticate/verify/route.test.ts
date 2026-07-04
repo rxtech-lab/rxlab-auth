@@ -61,6 +61,7 @@ const verifyAuthenticationResponseMock = mock();
 const signAccessTokenMock = mock();
 const signIdTokenMock = mock();
 const generateRefreshTokenMock = mock();
+const getUserRoleKeysMock = mock();
 const insertValues = mock();
 const updateSet = mock();
 
@@ -96,6 +97,10 @@ mock.module("@/lib/oauth/jwt", () => ({
   signAccessToken: signAccessTokenMock,
   signIdToken: signIdTokenMock,
   generateRefreshToken: generateRefreshTokenMock,
+}));
+
+mock.module("@/lib/oauth/roles", () => ({
+  getUserRoleKeys: getUserRoleKeysMock,
 }));
 
 const { POST } = await import("./route");
@@ -139,6 +144,7 @@ describe("POST /api/oauth/passkey/authenticate/verify", () => {
     signAccessTokenMock.mockReset();
     signIdTokenMock.mockReset();
     generateRefreshTokenMock.mockReset();
+    getUserRoleKeysMock.mockReset();
     insertValues.mockReset();
     updateSet.mockReset();
 
@@ -154,6 +160,7 @@ describe("POST /api/oauth/passkey/authenticate/verify", () => {
     signAccessTokenMock.mockResolvedValue("access-token-stub");
     signIdTokenMock.mockResolvedValue("id-token-stub");
     generateRefreshTokenMock.mockReturnValue("refresh-token-stub");
+    getUserRoleKeysMock.mockResolvedValue(["member"]);
     insertValues.mockResolvedValue(undefined);
     updateSet.mockReturnValue({ where: () => Promise.resolve() });
   });

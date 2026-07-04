@@ -37,6 +37,7 @@ const verifyRegistrationResponseMock = mock();
 const signAccessTokenMock = mock();
 const signIdTokenMock = mock();
 const generateRefreshTokenMock = mock();
+const getUserRoleKeysMock = mock();
 const generateAvatarSeedMock = mock();
 const insertValues = mock();
 const transactionMock = mock();
@@ -73,6 +74,10 @@ mock.module("@/lib/oauth/jwt", () => ({
   signIdToken: signIdTokenMock,
   generateRefreshToken: generateRefreshTokenMock,
   verifyAccessToken: mock(),
+}));
+
+mock.module("@/lib/oauth/roles", () => ({
+  getUserRoleKeys: getUserRoleKeysMock,
 }));
 
 mock.module("@/lib/identicon/generate", () => ({
@@ -140,6 +145,7 @@ describe("POST /api/oauth/passkey/account-creation/verify", () => {
     signAccessTokenMock.mockReset();
     signIdTokenMock.mockReset();
     generateRefreshTokenMock.mockReset();
+    getUserRoleKeysMock.mockReset();
     generateAvatarSeedMock.mockReset();
     insertValues.mockReset();
     transactionMock.mockReset();
@@ -164,6 +170,7 @@ describe("POST /api/oauth/passkey/account-creation/verify", () => {
     signAccessTokenMock.mockResolvedValue("access-token-stub");
     signIdTokenMock.mockResolvedValue("id-token-stub");
     generateRefreshTokenMock.mockReturnValue("refresh-token-stub");
+    getUserRoleKeysMock.mockResolvedValue(["member"]);
     generateAvatarSeedMock.mockReturnValue("seed-stub");
     insertValues.mockResolvedValue(undefined);
     transactionMock.mockImplementation(async (cb: (tx: unknown) => unknown) => {

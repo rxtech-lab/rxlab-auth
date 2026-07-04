@@ -109,6 +109,49 @@ export const addClientAppIdSchema = z.object({
     ),
 });
 
+export const createClientRoleSchema = z.object({
+  clientId: z.string().min(1, "Client ID is required"),
+  key: z
+    .string()
+    .min(1, "Role key is required")
+    .max(64, "Role key is too long")
+    .regex(
+      /^[a-z][a-z0-9_-]*$/,
+      "Role key must start with a lowercase letter and contain only lowercase letters, numbers, dashes, or underscores"
+    ),
+  name: z
+    .string()
+    .min(1, "Role name is required")
+    .max(64, "Role name is too long"),
+});
+
+export const updateClientRoleSchema = z.object({
+  roleId: z.string().min(1, "Role ID is required"),
+  clientId: z.string().min(1, "Client ID is required"),
+  key: z
+    .string()
+    .min(1, "Role key is required")
+    .max(64, "Role key is too long")
+    .regex(
+      /^[a-z][a-z0-9_-]*$/,
+      "Role key must start with a lowercase letter and contain only lowercase letters, numbers, dashes, or underscores"
+    ),
+  name: z
+    .string()
+    .min(1, "Role name is required")
+    .max(64, "Role name is too long"),
+});
+
+export const setUserRolesSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  assignments: z.array(
+    z.object({
+      clientId: z.string().min(1, "Client ID is required"),
+      roleIds: z.array(z.string().min(1, "Role ID is required")),
+    })
+  ),
+});
+
 export type UpdateSignUpSettingsInput = z.infer<
   typeof updateSignUpSettingsSchema
 >;
@@ -117,6 +160,9 @@ export type AddClientWhitelistEmailInput = z.infer<
   typeof addClientWhitelistEmailSchema
 >;
 export type AddClientAppIdInput = z.infer<typeof addClientAppIdSchema>;
+export type CreateClientRoleInput = z.infer<typeof createClientRoleSchema>;
+export type UpdateClientRoleInput = z.infer<typeof updateClientRoleSchema>;
+export type SetUserRolesInput = z.infer<typeof setUserRolesSchema>;
 
 // User management schemas
 export const createUserSchema = z.object({

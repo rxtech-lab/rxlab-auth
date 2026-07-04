@@ -23,6 +23,7 @@ const hashPasswordMock = mock();
 const signAccessTokenMock = mock();
 const signIdTokenMock = mock();
 const generateRefreshTokenMock = mock();
+const getUserRoleKeysMock = mock();
 const generateAvatarSeedMock = mock();
 const sendEmailMock = mock();
 const insertValues = mock();
@@ -48,6 +49,10 @@ mock.module("@/lib/oauth/jwt", () => ({
   signAccessToken: signAccessTokenMock,
   signIdToken: signIdTokenMock,
   generateRefreshToken: generateRefreshTokenMock,
+}));
+
+mock.module("@/lib/oauth/roles", () => ({
+  getUserRoleKeys: getUserRoleKeysMock,
 }));
 
 mock.module("@/lib/settings/sign-up", () => ({
@@ -86,6 +91,7 @@ describe("POST /api/oauth/signup", () => {
     signAccessTokenMock.mockReset();
     signIdTokenMock.mockReset();
     generateRefreshTokenMock.mockReset();
+    getUserRoleKeysMock.mockReset();
     generateAvatarSeedMock.mockReset();
     sendEmailMock.mockReset();
     insertValues.mockReset();
@@ -98,6 +104,7 @@ describe("POST /api/oauth/signup", () => {
     signAccessTokenMock.mockResolvedValue("access-token-stub");
     signIdTokenMock.mockResolvedValue("id-token-stub");
     generateRefreshTokenMock.mockReturnValue("refresh-token-stub");
+    getUserRoleKeysMock.mockResolvedValue(["member"]);
     generateAvatarSeedMock.mockReturnValue("seed-stub");
     sendEmailMock.mockResolvedValue(undefined);
     insertValues.mockResolvedValue(undefined);
@@ -129,6 +136,7 @@ describe("POST /api/oauth/signup", () => {
     expect(body.token_type).toBe("Bearer");
     expect(body.scope).toBe("openid email");
     expect(hashPasswordMock).toHaveBeenCalledWith("correct-horse");
+    expect(signAccessTokenMock.mock.calls[0][0].roles).toEqual(["member"]);
     // 2 inserts: users + oauthRefreshTokens
     expect(insertValues).toHaveBeenCalledTimes(2);
   });
