@@ -284,7 +284,7 @@ export function UserSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent data-testid="user-sheet">
+      <SheetContent className="overflow-y-auto" data-testid="user-sheet">
         <SheetHeader>
           <SheetTitle>
             {mode === "create" ? "Create User" : "Edit User"}
