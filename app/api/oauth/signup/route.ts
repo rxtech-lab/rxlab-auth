@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   oauthClients,
+  oauthClientUserRoles,
   users,
   emailVerificationTokens,
 } from "@/lib/db/schema";
@@ -137,15 +138,27 @@ export async function POST(request: NextRequest) {
   try {
     if (e2eMode) {
       // E2E: create verified, no email.
-      await db.insert(users).values({
-        id: userId,
-        email,
-        passwordHash,
-        displayName,
-        avatarSeed,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
+      await db.transaction(async (tx) => {
+        await tx.insert(users).values({
+          id: userId,
+          email,
+          passwordHash,
+          displayName,
+          avatarSeed,
+          emailVerified: true,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        if (client.defaultRoleId) {
+          await tx.insert(oauthClientUserRoles).values({
+            id: crypto.randomUUID(),
+            clientId: client.id,
+            userId,
+            roleId: client.defaultRoleId,
+            createdAt: now,
+          });
+        }
       });
     } else {
       // Production native flow: create unverified user + send verification email.
@@ -165,6 +178,16 @@ export async function POST(request: NextRequest) {
           createdAt: now,
           updatedAt: now,
         });
+
+        if (client.defaultRoleId) {
+          await tx.insert(oauthClientUserRoles).values({
+            id: crypto.randomUUID(),
+            clientId: client.id,
+            userId,
+            roleId: client.defaultRoleId,
+            createdAt: now,
+          });
+        }
 
         await tx.insert(emailVerificationTokens).values({
           id: tokenId,

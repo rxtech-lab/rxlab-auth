@@ -142,6 +142,11 @@ export const updateClientRoleSchema = z.object({
     .max(64, "Role name is too long"),
 });
 
+export const setClientDefaultRoleSchema = z.object({
+  clientId: z.string().min(1, "Client ID is required"),
+  roleId: z.string().min(1, "Role ID is required").nullable(),
+});
+
 export const setUserRolesSchema = z.object({
   userId: z.string().min(1, "User ID is required"),
   assignments: z.array(
@@ -162,6 +167,9 @@ export type AddClientWhitelistEmailInput = z.infer<
 export type AddClientAppIdInput = z.infer<typeof addClientAppIdSchema>;
 export type CreateClientRoleInput = z.infer<typeof createClientRoleSchema>;
 export type UpdateClientRoleInput = z.infer<typeof updateClientRoleSchema>;
+export type SetClientDefaultRoleInput = z.infer<
+  typeof setClientDefaultRoleSchema
+>;
 export type SetUserRolesInput = z.infer<typeof setUserRolesSchema>;
 
 // User management schemas

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Plus, Save, Shield, Trash2 } from "lucide-react";
+import { Loader2, Plus, Save, Shield, Star, Trash2, X } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import {
   createClientRole,
   deleteClientRole,
+  setClientDefaultRole,
   updateClientRole,
 } from "@/actions/admin/clients/roles";
 import type { OAuthClientRole } from "@/lib/db/schema";
@@ -22,13 +23,16 @@ import type { OAuthClientRole } from "@/lib/db/schema";
 interface ClientRolesCardProps {
   clientId: string;
   initialRoles: OAuthClientRole[];
+  initialDefaultRoleId: string | null;
 }
 
 export function ClientRolesCard({
   clientId,
   initialRoles,
+  initialDefaultRoleId,
 }: ClientRolesCardProps) {
   const [roles, setRoles] = useState(initialRoles);
+  const [defaultRoleId, setDefaultRoleId] = useState(initialDefaultRoleId);
   const [newKey, setNewKey] = useState("");
   const [newName, setNewName] = useState("");
   const [drafts, setDrafts] = useState(() =>
@@ -116,11 +120,28 @@ export function ClientRolesCard({
       const result = await deleteClientRole(role.id, clientId);
       if (result.success) {
         setRoles(roles.filter((existing) => existing.id !== role.id));
+        if (defaultRoleId === role.id) {
+          setDefaultRoleId(null);
+        }
         const nextDrafts = { ...drafts };
         delete nextDrafts[role.id];
         setDrafts(nextDrafts);
       } else {
         setError(result.error || "Failed to delete role");
+      }
+      setPendingRoleId(null);
+    });
+  };
+
+  const handleSetDefault = (roleId: string | null) => {
+    setError(null);
+    setPendingRoleId(roleId ?? "clear-default");
+    startTransition(async () => {
+      const result = await setClientDefaultRole({ clientId, roleId });
+      if (result.success) {
+        setDefaultRoleId(roleId);
+      } else {
+        setError(result.error || "Failed to set default role");
       }
       setPendingRoleId(null);
     });
@@ -137,7 +158,8 @@ export function ClientRolesCard({
         </CardTitle>
         <CardDescription>
           Define roles for this app. Users can be assigned these roles from the
-          user management page.
+          user management page. New users receive only the explicitly selected
+          default role; if none is selected, no role is assigned.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -187,6 +209,30 @@ export function ClientRolesCard({
           </p>
         ) : (
           <div className="space-y-2">
+            {defaultRoleId && (
+              <div className="flex items-center justify-between gap-3 rounded-xl border p-3">
+                <div>
+                  <p className="text-sm font-medium">Default role</p>
+                  <p className="text-xs text-muted-foreground">
+                    Applied when this OAuth client creates a new user.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleSetDefault(null)}
+                  disabled={isPending}
+                  data-testid="clear-default-client-role"
+                >
+                  {pendingRoleId === "clear-default" ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <X className="size-4" />
+                  )}
+                  Clear
+                </Button>
+              </div>
+            )}
             {roles.map((role) => {
               const draft = drafts[role.id] ?? {
                 key: role.key,
@@ -199,7 +245,7 @@ export function ClientRolesCard({
               return (
                 <div
                   key={role.id}
-                  className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto] p-3 rounded-xl bg-muted"
+                  className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto_auto] p-3 rounded-xl bg-muted"
                   data-testid={`client-role-${role.key}`}
                 >
                   <Input
@@ -225,6 +271,20 @@ export function ClientRolesCard({
                     data-testid={`client-role-key-${role.key}`}
                     className="font-mono"
                   />
+                  <Button
+                    type="button"
+                    variant={defaultRoleId === role.id ? "default" : "outline"}
+                    onClick={() => handleSetDefault(role.id)}
+                    disabled={isPending || defaultRoleId === role.id}
+                    data-testid={`set-default-client-role-${role.key}`}
+                  >
+                    {isRolePending && defaultRoleId !== role.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Star className="size-4" />
+                    )}
+                    {defaultRoleId === role.id ? "Default" : "Set default"}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"

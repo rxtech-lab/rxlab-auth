@@ -28,7 +28,7 @@ if (process.env.NODE_ENV !== "production") {
 
 export type Database = typeof db;
 
-// Auto-run migrations for E2E tests with in-memory database
+// Auto-run migrations for isolated E2E databases.
 async function initializeDatabase() {
   // Skip if already initialized
   if (globalForDb.initialized) {
@@ -37,15 +37,15 @@ async function initializeDatabase() {
 
   if (
     process.env.E2E_SKIP_EMAIL_VERIFICATION === "true" &&
-    process.env.TURSO_DATABASE_URL?.includes(":memory:")
+    process.env.TURSO_DATABASE_URL
   ) {
-    // Use drizzle migrations for in-memory E2E testing
+    // Use drizzle migrations for E2E testing.
     const migrationsFolder = path.join(process.cwd(), "lib/db/migrations");
 
     await migrate(db, { migrationsFolder });
 
     globalForDb.initialized = true;
-    console.log("[E2E] In-memory database migrations applied");
+    console.log("[E2E] Database migrations applied");
   }
 }
 

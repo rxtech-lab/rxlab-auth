@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { users, passkeys } from "@/lib/db/schema";
+import { users, passkeys, oauthClientUserRoles } from "@/lib/db/schema";
 import { getWebAuthnChallenge, deleteWebAuthnChallenge } from "@/lib/redis";
 import { rpID, expectedOrigins, base64UrlEncode } from "@/lib/webauthn/config";
 import { generateAvatarSeed } from "@/lib/identicon/generate";
@@ -160,6 +160,16 @@ export async function POST(request: NextRequest) {
           : null,
       createdAt: now,
     });
+
+    if (client.defaultRoleId) {
+      await tx.insert(oauthClientUserRoles).values({
+        id: crypto.randomUUID(),
+        clientId: client.id,
+        userId,
+        roleId: client.defaultRoleId,
+        createdAt: now,
+      });
+    }
   });
 
   await deleteWebAuthnChallenge(data.session_id);

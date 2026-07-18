@@ -57,6 +57,13 @@
       "when": 1783180400054,
       "tag": "0007_app_scoped_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1784352577495,
+      "tag": "0008_blushing_stellaris",
+      "breakpoints": true
     }
   ]
 }

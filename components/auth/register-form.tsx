@@ -18,6 +18,15 @@ export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/account";
+  let oauthClientId: string | undefined;
+  try {
+    const redirectUrl = new URL(redirectTo, "http://localhost");
+    if (redirectUrl.pathname === "/api/oauth/authorize") {
+      oauthClientId = redirectUrl.searchParams.get("client_id") || undefined;
+    }
+  } catch {
+    // The server action treats an unrecognized redirect as ordinary sign-up.
+  }
   const loginHref =
     redirectTo === "/account"
       ? "/login"
@@ -33,7 +42,12 @@ export function RegisterForm({ whitelistOnly = false }: RegisterFormProps) {
     setError(null);
 
     startTransition(async () => {
-      const result = await register({ email, password, displayName: displayName || undefined });
+      const result = await register({
+        email,
+        password,
+        displayName: displayName || undefined,
+        oauthClientId,
+      });
       if (result.success) {
         if (process.env.NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION === "true") {
           const target = redirectTo === "/account" ? "/account?setup=passkey" : redirectTo;

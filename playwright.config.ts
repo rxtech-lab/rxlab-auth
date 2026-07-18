@@ -1,4 +1,15 @@
 import { defineConfig, devices } from "@playwright/test";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+
+// Next.js can evaluate server actions and route handlers in separate module
+// contexts, which makes file::memory: databases diverge during cross-route
+// E2E flows. A unique file per Playwright run keeps every context on the same
+// database without leaking state between runs.
+const e2eDatabaseUrl = `file:${join(
+  tmpdir(),
+  `rxlab-auth-e2e-${process.pid}-${Date.now()}.sqlite`,
+)}`;
 
 // Test JWT keys for E2E testing (valid RSA key pair)
 const testPrivateKey = `-----BEGIN PRIVATE KEY-----
@@ -84,8 +95,8 @@ export default defineConfig({
         E2E_SKIP_EMAIL_VERIFICATION: "true",
         NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION: "true",
 
-        // Database (in-memory SQLite for E2E tests)
-        TURSO_DATABASE_URL: "file::memory:",
+        // Database (unique file-backed SQLite database for this E2E run)
+        TURSO_DATABASE_URL: e2eDatabaseUrl,
         TURSO_AUTH_TOKEN: "",
 
         // Session

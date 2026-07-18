@@ -28,6 +28,7 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   displayName: displayNameSchema.optional(),
+  oauthClientId: z.string().min(1).optional(),
 });
 
 export const loginSchema = z.object({

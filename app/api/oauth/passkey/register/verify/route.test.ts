@@ -11,6 +11,7 @@ const VALID_CLIENT = {
   allowedScopes: JSON.stringify(["openid", "read:profile", "read:email"]),
   isFirstParty: true,
   signInPermission: "all" as const,
+  defaultRoleId: null as string | null,
   permissions: null,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -173,6 +174,23 @@ describe("POST /api/oauth/passkey/register/verify", () => {
     // 2 tx inserts + 1 refresh-token insert from issueOAuthTokenResponse
     expect(insertValues).toHaveBeenCalledTimes(3);
     expect(deleteChallengeMock).toHaveBeenCalledWith("session-id");
+  });
+
+  test("assigns the client's explicit default role in the creation transaction", async () => {
+    findClient.mockResolvedValue({
+      ...VALID_CLIENT,
+      defaultRoleId: "member-role-id",
+    });
+
+    const res = await POST(makeRequest(VALID_BODY) as never);
+
+    expect(res.status).toBe(201);
+    expect(insertValues).toHaveBeenCalledTimes(4);
+    expect(insertValues.mock.calls[2][0]).toMatchObject({
+      clientId: VALID_CLIENT.id,
+      userId: PENDING_USER_ID,
+      roleId: "member-role-id",
+    });
   });
 
   test("invalid_client: rejects unknown client_id", async () => {

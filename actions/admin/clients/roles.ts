@@ -1,12 +1,14 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { oauthClientRoles } from "@/lib/db/schema";
+import { oauthClientRoles, oauthClients } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
 import {
   createClientRoleSchema,
   updateClientRoleSchema,
+  setClientDefaultRoleSchema,
   type CreateClientRoleInput,
+  type SetClientDefaultRoleInput,
   type UpdateClientRoleInput,
 } from "@/lib/validations/admin";
 import { and, eq, not } from "drizzle-orm";
@@ -159,6 +161,55 @@ export async function updateClientRole(
   } catch (error) {
     console.error("Update client role error:", error);
     return { success: false, error: "Failed to update role" };
+  }
+}
+
+export async function setClientDefaultRole(
+  input: SetClientDefaultRoleInput
+): Promise<ClientRoleResult> {
+  try {
+    await requireAdmin();
+
+    const parsed = setClientDefaultRoleSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message || "Invalid input",
+      };
+    }
+
+    const { clientId, roleId } = parsed.data;
+
+    const client = await db.query.oauthClients.findFirst({
+      where: eq(oauthClients.id, clientId),
+    });
+    if (!client) {
+      return { success: false, error: "OAuth client not found" };
+    }
+
+    if (roleId) {
+      const role = await db.query.oauthClientRoles.findFirst({
+        where: and(
+          eq(oauthClientRoles.id, roleId),
+          eq(oauthClientRoles.clientId, clientId)
+        ),
+      });
+      if (!role) {
+        return { success: false, error: "Role not found for this app" };
+      }
+    }
+
+    await db
+      .update(oauthClients)
+      .set({ defaultRoleId: roleId, updatedAt: new Date() })
+      .where(eq(oauthClients.id, clientId));
+
+    revalidatePath(`/admin/dashboard/clients/${clientId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Set client default role error:", error);
+    return { success: false, error: "Failed to set default role" };
   }
 }
 
