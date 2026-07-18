@@ -70,6 +70,7 @@ export default async function EditClientPage({ params }: PageProps) {
       whitelistEmails={whitelistEmails}
       appIds={appIds}
       roles={roles}
+      defaultRoleId={client.defaultRoleId}
       endpoints={endpoints}
     />
   );

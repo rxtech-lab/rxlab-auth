@@ -3,6 +3,7 @@ import {
   createClientRoleSchema,
   createOAuthClientSchema,
   createUserSchema,
+  setClientDefaultRoleSchema,
   setUserRolesSchema,
   updateUserSchema,
 } from "./admin";
@@ -268,6 +269,24 @@ describe("client role schemas", () => {
           roleIds: ["role_1", "role_2"],
         },
       ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test("should accept an explicit default role", () => {
+    const result = setClientDefaultRoleSchema.safeParse({
+      clientId: "client_123",
+      roleId: "role_1",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test("should accept null when no default role is configured", () => {
+    const result = setClientDefaultRoleSchema.safeParse({
+      clientId: "client_123",
+      roleId: null,
     });
 
     expect(result.success).toBe(true);

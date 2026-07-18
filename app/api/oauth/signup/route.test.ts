@@ -11,6 +11,7 @@ const VALID_CLIENT = {
   allowedScopes: JSON.stringify(["openid", "email", "profile"]),
   isFirstParty: true,
   signInPermission: "all" as const,
+  defaultRoleId: null as string | null,
   permissions: null,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -139,6 +140,28 @@ describe("POST /api/oauth/signup", () => {
     expect(signAccessTokenMock.mock.calls[0][0].roles).toEqual(["member"]);
     // 2 inserts: users + oauthRefreshTokens
     expect(insertValues).toHaveBeenCalledTimes(2);
+  });
+
+  test("assigns the client's explicit default role while creating the user", async () => {
+    findClient.mockResolvedValue({
+      ...VALID_CLIENT,
+      defaultRoleId: "member-role-id",
+    });
+
+    const res = await POST(
+      makeRequest({
+        client_id: VALID_CLIENT.id,
+        username: "default-role@example.com",
+        password: "correct-horse",
+      }) as never,
+    );
+
+    expect(res.status).toBe(201);
+    expect(insertValues).toHaveBeenCalledTimes(3);
+    expect(insertValues.mock.calls[1][0]).toMatchObject({
+      clientId: VALID_CLIENT.id,
+      roleId: "member-role-id",
+    });
   });
 
   test("non-E2E mode: creates unverified user, sends email, returns user_id", async () => {

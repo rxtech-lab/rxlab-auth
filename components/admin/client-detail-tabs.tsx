@@ -31,6 +31,7 @@ interface ClientDetailTabsProps {
   whitelistEmails: OAuthClientEmailWhitelist[];
   appIds: OAuthClientAppId[];
   roles: OAuthClientRole[];
+  defaultRoleId: string | null;
   endpoints: {
     issuer: string;
     authorizationEndpoint: string;
@@ -47,7 +48,7 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]["id"];
 
-export function ClientDetailTabs({ client, whitelistEmails, appIds, roles, endpoints }: ClientDetailTabsProps) {
+export function ClientDetailTabs({ client, whitelistEmails, appIds, roles, defaultRoleId, endpoints }: ClientDetailTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("general");
 
   return (
@@ -132,7 +133,11 @@ export function ClientDetailTabs({ client, whitelistEmails, appIds, roles, endpo
             initialPermission={client.signInPermission as "all" | "none" | "whitelist"}
             initialEmails={whitelistEmails}
           />
-          <ClientRolesCard clientId={client.id} initialRoles={roles} />
+          <ClientRolesCard
+            clientId={client.id}
+            initialRoles={roles}
+            initialDefaultRoleId={defaultRoleId}
+          />
         </div>
       )}
 

@@ -1,7 +1,12 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { users, emailVerificationTokens } from "@/lib/db/schema";
+import {
+  users,
+  emailVerificationTokens,
+  oauthClients,
+  oauthClientUserRoles,
+} from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { sendEmail } from "@/lib/email/resend";
@@ -30,7 +35,7 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
     };
   }
 
-  const { email, password, displayName } = parsed.data;
+  const { email, password, displayName, oauthClientId } = parsed.data;
 
   // Check if sign-up is allowed
   const signUpCheck = await checkSignUpAllowed(email);
@@ -64,19 +69,36 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
     const userId = crypto.randomUUID();
     const avatarSeed = generateAvatarSeed();
     const now = new Date();
+    const oauthClient = oauthClientId
+      ? await db.query.oauthClients.findFirst({
+          where: eq(oauthClients.id, oauthClientId),
+        })
+      : undefined;
 
     // Skip email verification in E2E test environment
     if (process.env.E2E_SKIP_EMAIL_VERIFICATION === "true") {
       // Create user with email already verified
-      await db.insert(users).values({
-        id: userId,
-        email: email.toLowerCase(),
-        passwordHash,
-        displayName: displayName || email.split("@")[0],
-        avatarSeed,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
+      await db.transaction(async (tx) => {
+        await tx.insert(users).values({
+          id: userId,
+          email: email.toLowerCase(),
+          passwordHash,
+          displayName: displayName || email.split("@")[0],
+          avatarSeed,
+          emailVerified: true,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        if (oauthClient?.defaultRoleId) {
+          await tx.insert(oauthClientUserRoles).values({
+            id: crypto.randomUUID(),
+            clientId: oauthClient.id,
+            userId,
+            roleId: oauthClient.defaultRoleId,
+            createdAt: now,
+          });
+        }
       });
 
       // Create session
@@ -104,6 +126,16 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
         createdAt: now,
         updatedAt: now,
       });
+
+      if (oauthClient?.defaultRoleId) {
+        await tx.insert(oauthClientUserRoles).values({
+          id: crypto.randomUUID(),
+          clientId: oauthClient.id,
+          userId,
+          roleId: oauthClient.defaultRoleId,
+          createdAt: now,
+        });
+      }
 
       // Create verification token
       await tx.insert(emailVerificationTokens).values({

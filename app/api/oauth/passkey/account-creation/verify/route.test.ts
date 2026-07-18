@@ -11,6 +11,7 @@ const VALID_CLIENT = {
   allowedScopes: JSON.stringify(["openid", "read:profile", "read:email"]),
   isFirstParty: true,
   signInPermission: "all" as const,
+  defaultRoleId: null as string | null,
   permissions: null,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -205,6 +206,23 @@ describe("POST /api/oauth/passkey/account-creation/verify", () => {
     const userInsert = insertValues.mock.calls[0][0];
     expect(userInsert.email).toBe("14155550100@phone.rxlab.local");
     expect(userInsert.emailVerified).toBe(false);
+  });
+
+  test("assigns the client's explicit default role in the creation transaction", async () => {
+    findClient.mockResolvedValue({
+      ...VALID_CLIENT,
+      defaultRoleId: "member-role-id",
+    });
+
+    const res = await POST(makeRequest(VALID_EMAIL_BODY) as never);
+
+    expect(res.status).toBe(201);
+    expect(insertValues).toHaveBeenCalledTimes(4);
+    expect(insertValues.mock.calls[2][0]).toMatchObject({
+      clientId: VALID_CLIENT.id,
+      userId: PENDING_USER_ID,
+      roleId: "member-role-id",
+    });
   });
 
   test("invalid_grant: expired/missing session", async () => {

@@ -1,4 +1,12 @@
-import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  index,
+  uniqueIndex,
+  type AnySQLiteColumn,
+} from "drizzle-orm/sqlite-core";
+import { oauthClientRoles } from "./oauth-client-roles";
 
 export const oauthClients = sqliteTable(
   "oauth_clients",
@@ -19,6 +27,10 @@ export const oauthClients = sqliteTable(
     })
       .notNull()
       .default("all"), // Controls who can sign in via this client
+    defaultRoleId: text("default_role_id").references(
+      (): AnySQLiteColumn => oauthClientRoles.id,
+      { onDelete: "set null" }
+    ), // Explicit role assigned when this client creates a user
     // Reserved for future permissions
     permissions: text("permissions"), // JSON object for future use
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
