@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SUPPORTED_SCOPES, type SupportedScope } from "@/lib/scopes";
+import { SUPPORTED_SCOPES, type SupportedScope, normalizeScope } from "@/lib/scopes";
 
 export { SUPPORTED_SCOPES, type SupportedScope };
 
@@ -212,9 +212,15 @@ export function parseScopes(scopeString: string): SupportedScope[] {
   const requestedScopes = scopeString.split(" ").filter(Boolean);
   const validScopes: SupportedScope[] = [];
 
-  for (const scope of requestedScopes) {
-    if (SUPPORTED_SCOPES.includes(scope as SupportedScope)) {
-      validScopes.push(scope as SupportedScope);
+  for (const requested of requestedScopes) {
+    // Accept standard OIDC scope names (email/profile) by mapping them onto the
+    // internal vocabulary (read:email/read:profile) before validating.
+    const scope = normalizeScope(requested) as SupportedScope;
+    if (
+      SUPPORTED_SCOPES.includes(scope) &&
+      !validScopes.includes(scope)
+    ) {
+      validScopes.push(scope);
     }
   }
 

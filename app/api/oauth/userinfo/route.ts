@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { oauthConsents, users } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema";
 import { verifyAccessToken } from "@/lib/oauth/jwt";
 import { getUserRoleKeys } from "@/lib/oauth/roles";
-import { and, eq } from "drizzle-orm";
+import { grantsEmailScope } from "@/lib/scopes";
+import { eq } from "drizzle-orm";
 
 async function handleUserInfo(request: NextRequest) {
   try {
@@ -41,14 +42,9 @@ async function handleUserInfo(request: NextRequest) {
       );
     }
 
-    // Get granted scopes from database
-    const consent = await db.query.oauthConsents.findFirst({
-      where: and(
-        eq(oauthConsents.userId, user.id),
-        eq(oauthConsents.clientId, payload.client_id)
-      ),
-    });
-    const grantedScopes: string[] = consent ? JSON.parse(consent.scopes) : [];
+    // Granted scopes come from the access token itself (set at issuance).
+    const grantedScopes: string[] =
+      typeof payload.scope === "string" ? payload.scope.split(" ") : [];
     const roles = await getUserRoleKeys(user.id, payload.client_id);
 
     // Build response - always include profile, email requires scope from DB
@@ -61,7 +57,7 @@ async function handleUserInfo(request: NextRequest) {
       roles,
     };
 
-    if (grantedScopes.includes("email")) {
+    if (grantsEmailScope(grantedScopes)) {
       response.email = user.email;
       response.email_verified = user.emailVerified;
     }
