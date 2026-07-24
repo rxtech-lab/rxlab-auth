@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
   oauthClients,
-  oauthConsents,
   oauthRefreshTokens,
   users,
 } from "@/lib/db/schema";
+import { grantsEmailScope } from "@/lib/scopes";
 import { verifyPassword } from "@/lib/auth/password";
 import { getOAuthCode, deleteOAuthCode } from "@/lib/redis";
 import { verifyCodeChallenge } from "@/lib/oauth/pkce";
@@ -237,17 +237,13 @@ async function handleAuthorizationCodeGrant(
     );
   }
 
-  // Get granted scopes from database
-  const consent = await db.query.oauthConsents.findFirst({
-    where: and(
-      eq(oauthConsents.userId, user.id),
-      eq(oauthConsents.clientId, client.id),
-    ),
-  });
-  const grantedScopes: string[] = consent ? JSON.parse(consent.scopes) : [];
+  // The authorization code carries exactly the scopes granted for this flow.
+  // Use it directly — first-party clients skip the consent UI and never write a
+  // consent row, so reading consent here would drop email for them.
+  const grantedScopes: string[] = codeData.scopes;
 
   // Generate tokens
-  const scopeString = codeData.scopes.join(" ");
+  const scopeString = grantedScopes.join(" ");
   const roles = await getUserRoleKeys(user.id, client.id);
 
   const accessToken = await signAccessToken({
@@ -260,9 +256,9 @@ async function handleAuthorizationCodeGrant(
   const idToken = await signIdToken(
     {
       sub: user.id,
-      // Email claims based on granted scopes from database
-      email: grantedScopes.includes("email") ? user.email : undefined,
-      email_verified: grantedScopes.includes("email")
+      // Email claims based on the scopes granted for this authorization code
+      email: grantsEmailScope(grantedScopes) ? user.email : undefined,
+      email_verified: grantsEmailScope(grantedScopes)
         ? (user.emailVerified ?? false)
         : undefined,
       // Always include profile claims

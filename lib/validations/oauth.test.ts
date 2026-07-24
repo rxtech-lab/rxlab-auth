@@ -459,6 +459,22 @@ describe("parseScopes", () => {
     const scopes = parseScopes("openid  read:profile   read:email");
     expect(scopes.length).toBe(3);
   });
+
+  test("should map standard OIDC scopes onto the internal vocabulary", () => {
+    // OIDC clients (Auth.js/NextAuth) request `email`/`profile`; internally
+    // these are `read:email`/`read:profile`.
+    const scopes = parseScopes("openid email profile offline_access");
+    expect(scopes).toContain("openid");
+    expect(scopes).toContain("read:email");
+    expect(scopes).toContain("read:profile");
+    // Unsupported scopes (offline_access) are still dropped.
+    expect(scopes).not.toContain("offline_access");
+  });
+
+  test("should not duplicate when both dialects are requested", () => {
+    const scopes = parseScopes("email read:email");
+    expect(scopes.filter((s) => s === "read:email").length).toBe(1);
+  });
 });
 
 describe("validateScopes", () => {

@@ -102,6 +102,32 @@ export const SCOPES: Scope[] = generateScopes();
 export const SUPPORTED_SCOPES = SCOPES.map((s) => s.key) as [string, ...string[]];
 export type SupportedScope = (typeof SUPPORTED_SCOPES)[number];
 
+/**
+ * Standard OIDC scope names (what OIDC clients such as Auth.js / NextAuth
+ * request) mapped to this server's internal scope vocabulary. OIDC clients
+ * speak `email` / `profile`; internally those are `read:email` / `read:profile`.
+ * Scopes with no alias (e.g. `offline_access`) are simply not supported and
+ * get dropped by `parseScopes`.
+ */
+export const OIDC_SCOPE_ALIASES: Record<string, string> = {
+  email: "read:email",
+  profile: "read:profile",
+};
+
+/** Translate a requested scope into the internal vocabulary. */
+export function normalizeScope(scope: string): string {
+  return OIDC_SCOPE_ALIASES[scope] ?? scope;
+}
+
+/**
+ * Whether a granted-scope list authorizes the email claim. Accepts either
+ * dialect so it works against normalized internal scopes (`read:email`) and any
+ * legacy/standard values (`email`) that may still live in stored grants.
+ */
+export function grantsEmailScope(scopes: string[]): boolean {
+  return scopes.includes("read:email") || scopes.includes("email");
+}
+
 export function getScope(key: string): Scope | undefined {
   return SCOPES.find((s) => s.key === key);
 }

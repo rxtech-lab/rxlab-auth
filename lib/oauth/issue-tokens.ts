@@ -6,6 +6,7 @@ import {
   generateRefreshToken,
 } from "@/lib/oauth/jwt";
 import { getUserRoleKeys } from "@/lib/oauth/roles";
+import { grantsEmailScope } from "@/lib/scopes";
 
 const ACCESS_TOKEN_EXPIRES_IN = 3600;
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -59,8 +60,8 @@ export async function issueOAuthTokenResponse(params: {
     idToken = await signIdToken(
       {
         sub: user.id,
-        email: scopes.includes("email") ? user.email : undefined,
-        email_verified: scopes.includes("email")
+        email: grantsEmailScope(scopes) ? user.email : undefined,
+        email_verified: grantsEmailScope(scopes)
           ? (user.emailVerified ?? false)
           : undefined,
         name: user.displayName ?? undefined,
