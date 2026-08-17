@@ -24,6 +24,12 @@ import {
   type UserRoleAssignmentValue,
   type UserRoleOptionApp,
 } from "@/components/admin/user-role-assignments";
+import { UserAdminApiPermissions } from "@/components/admin/user-admin-api-permissions";
+import {
+  buildReadOAuthClientsPermissions,
+  getReadOAuthClientsSelection,
+  type ReadOAuthClientsPermissionSelection,
+} from "@/lib/admin-api/permissions";
 
 interface UserSheetProps {
   mode: "create" | "edit";
@@ -62,6 +68,19 @@ function UserForm({
   const [emailVerified, setEmailVerified] = useState<boolean>(
     mode === "edit" && user ? (user.emailVerified ?? false) : false
   );
+  const [adminApiPermission, setAdminApiPermission] =
+    useState<ReadOAuthClientsPermissionSelection>(() => {
+      const selection = getReadOAuthClientsSelection(
+        mode === "edit" && user ? user.adminApiPermissions : null,
+      );
+      const availableClientIds = new Set(roleOptions.map((client) => client.id));
+      return {
+        ...selection,
+        clientIds: selection.clientIds.filter((clientId) =>
+          availableClientIds.has(clientId),
+        ),
+      };
+    });
   const [roleAssignments, setRoleAssignments] = useState<
     UserRoleAssignmentValue[]
   >([]);
@@ -80,6 +99,19 @@ function UserForm({
     e.preventDefault();
     setError(null);
 
+    if (
+      adminApiPermission.enabled &&
+      adminApiPermission.scope === "selected" &&
+      adminApiPermission.clientIds.length === 0
+    ) {
+      setError("Select at least one OAuth client for this permission");
+      return;
+    }
+
+    const adminApiPermissions = buildReadOAuthClientsPermissions(
+      adminApiPermission,
+    );
+
     startTransition(async () => {
       if (mode === "create") {
         const result = await createUser({
@@ -88,6 +120,7 @@ function UserForm({
           displayName: displayName || undefined,
           username: username || null,
           emailVerified,
+          adminApiPermissions,
         });
 
         if (result.success) {
@@ -108,6 +141,7 @@ function UserForm({
           displayName: displayName || null,
           username: username || null,
           emailVerified,
+          adminApiPermissions,
         });
 
         if (!result.success) {
@@ -238,6 +272,13 @@ function UserForm({
           data-testid="user-verified-toggle"
         />
       </div>
+
+      <UserAdminApiPermissions
+        clients={roleOptions.map(({ id, name }) => ({ id, name }))}
+        value={adminApiPermission}
+        onChange={setAdminApiPermission}
+        disabled={isPending}
+      />
 
       {mode === "edit" && user && (
         <UserRoleAssignments

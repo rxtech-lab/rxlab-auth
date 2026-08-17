@@ -5,6 +5,7 @@ const mockFindFirst = mock(() => Promise.resolve(null));
 const mockInsert = mock(() => ({
   values: mock(() => Promise.resolve()),
 }));
+let insertedUser: Record<string, unknown> | undefined;
 const mockDb = {
   query: {
     users: {
@@ -17,6 +18,8 @@ const mockDb = {
 // Mock drizzle-orm eq function
 mock.module("drizzle-orm", () => ({
   eq: (field: unknown, value: unknown) => ({ field, value }),
+  and: (...conditions: unknown[]) => ({ conditions }),
+  not: (condition: unknown) => ({ not: condition }),
 }));
 
 // Mock the db module
@@ -27,6 +30,10 @@ mock.module("@/lib/db", () => ({
 // Mock the schema module
 mock.module("@/lib/db/schema", () => ({
   users: { id: "id", email: "email", username: "username" },
+}));
+
+mock.module("@/lib/admin-api/permission-targets", () => ({
+  findMissingPermissionClientIds: mock(() => Promise.resolve([])),
 }));
 
 // Mock requireAdmin to always succeed
@@ -56,8 +63,12 @@ describe("createUser", () => {
   beforeEach(() => {
     // Reset mocks before each test
     mockDb.query.users.findFirst = mock(() => Promise.resolve(null));
+    insertedUser = undefined;
     mockDb.insert = mock(() => ({
-      values: mock(() => Promise.resolve()),
+      values: mock((value: Record<string, unknown>) => {
+        insertedUser = value;
+        return Promise.resolve();
+      }),
     }));
   });
 
@@ -149,5 +160,18 @@ describe("createUser", () => {
 
     expect(result.success).toBe(true);
     expect(result.userId).toBeDefined();
+  });
+
+  test("should persist the OAuth client admin API permission", async () => {
+    const result = await createUser({
+      email: "api-reader@example.com",
+      password: "password123",
+      adminApiPermissions: ["read:oauth_clients:client_1,client_2"],
+    });
+
+    expect(result.success).toBe(true);
+    expect(insertedUser?.adminApiPermissions).toBe(
+      '["read:oauth_clients:client_1,client_2"]',
+    );
   });
 });
