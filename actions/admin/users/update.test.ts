@@ -20,6 +20,7 @@ const mockUpdate = mock(() => ({
     where: mock(() => Promise.resolve()),
   })),
 }));
+let updatedUserData: Record<string, unknown> | undefined;
 const mockDb = {
   query: {
     users: {
@@ -46,6 +47,10 @@ mock.module("@/lib/db/schema", () => ({
   users: { id: "id", email: "email", username: "username" },
 }));
 
+mock.module("@/lib/admin-api/permission-targets", () => ({
+  findMissingPermissionClientIds: mock(() => Promise.resolve([])),
+}));
+
 // Mock requireAdmin to always succeed
 mock.module("@/lib/auth/session", () => ({
   requireAdmin: mock(() => Promise.resolve()),
@@ -68,10 +73,14 @@ describe("updateUser", () => {
   beforeEach(() => {
     // Reset mocks before each test
     mockDb.query.users.findFirst = mock(() => Promise.resolve(mockExistingUser));
+    updatedUserData = undefined;
     mockDb.update = mock(() => ({
-      set: mock(() => ({
-        where: mock(() => Promise.resolve()),
-      })),
+      set: mock((value: Record<string, unknown>) => {
+        updatedUserData = value;
+        return {
+          where: mock(() => Promise.resolve()),
+        };
+      }),
     }));
   });
 
@@ -191,5 +200,16 @@ describe("updateUser", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toContain("letters, numbers, and underscores");
+  });
+
+  test("should persist the OAuth client admin API permission", async () => {
+    const result = await updateUser("user-123", {
+      adminApiPermissions: ["read:oauth_clients:all"],
+    });
+
+    expect(result.success).toBe(true);
+    expect(updatedUserData?.adminApiPermissions).toBe(
+      '["read:oauth_clients:all"]',
+    );
   });
 });

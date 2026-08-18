@@ -64,6 +64,13 @@
       "when": 1784352577495,
       "tag": "0008_blushing_stellaris",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1786975129860,
+      "tag": "0009_serious_skin",
+      "breakpoints": true
     }
   ]
 }

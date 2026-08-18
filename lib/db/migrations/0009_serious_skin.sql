@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `admin_api_permissions` text DEFAULT '[]' NOT NULL;

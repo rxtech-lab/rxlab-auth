@@ -8,6 +8,7 @@ import { generateAvatarSeed } from "@/lib/identicon/generate";
 import { createUserSchema, type CreateUserInput } from "@/lib/validations/admin";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { findMissingPermissionClientIds } from "@/lib/admin-api/permission-targets";
 
 export interface CreateUserResult {
   success: boolean;
@@ -29,8 +30,24 @@ export async function createUser(
       };
     }
 
-    const { email, password, displayName, username, emailVerified } =
-      parsed.data;
+    const {
+      email,
+      password,
+      displayName,
+      username,
+      emailVerified,
+      adminApiPermissions,
+    } = parsed.data;
+
+    const missingClientIds = await findMissingPermissionClientIds(
+      adminApiPermissions,
+    );
+    if (missingClientIds.length > 0) {
+      return {
+        success: false,
+        error: `Unknown OAuth client: ${missingClientIds.join(", ")}`,
+      };
+    }
 
     // Check if user already exists
     const existingUser = await db.query.users.findFirst({
@@ -75,6 +92,7 @@ export async function createUser(
       username: username || null,
       avatarSeed,
       emailVerified,
+      adminApiPermissions: JSON.stringify(adminApiPermissions),
       createdAt: now,
       updatedAt: now,
     });

@@ -16,6 +16,7 @@ describe("createUserSchema", () => {
       displayName: "Test User",
       username: "testuser",
       emailVerified: true,
+      adminApiPermissions: ["read:oauth_clients:all"],
     });
 
     expect(result.success).toBe(true);
@@ -25,6 +26,9 @@ describe("createUserSchema", () => {
       expect(result.data.displayName).toBe("Test User");
       expect(result.data.username).toBe("testuser");
       expect(result.data.emailVerified).toBe(true);
+      expect(result.data.adminApiPermissions).toEqual([
+        "read:oauth_clients:all",
+      ]);
     }
   });
 
@@ -37,6 +41,7 @@ describe("createUserSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.emailVerified).toBe(false); // default value
+      expect(result.data.adminApiPermissions).toEqual([]);
     }
   });
 
@@ -103,6 +108,9 @@ describe("updateUserSchema", () => {
       displayName: "New Name",
       username: "newusername",
       emailVerified: true,
+      adminApiPermissions: [
+        "read:oauth_clients:client_1,client_2",
+      ],
     });
 
     expect(result.success).toBe(true);
@@ -128,6 +136,14 @@ describe("updateUserSchema", () => {
     const result = updateUserSchema.safeParse({});
 
     expect(result.success).toBe(true);
+  });
+
+  test("should reject unsupported admin API permissions", () => {
+    const result = updateUserSchema.safeParse({
+      adminApiPermissions: ["write:oauth_clients:all"],
+    });
+
+    expect(result.success).toBe(false);
   });
 
   test("should accept null password to keep existing", () => {

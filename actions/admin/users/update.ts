@@ -8,6 +8,7 @@ import { updateUserSchema, type UpdateUserInput } from "@/lib/validations/admin"
 import { eq, and, not } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import type { User } from "@/lib/db/schema";
+import { findMissingPermissionClientIds } from "@/lib/admin-api/permission-targets";
 
 export interface UpdateUserResult {
   success: boolean;
@@ -30,8 +31,26 @@ export async function updateUser(
       };
     }
 
-    const { email, password, displayName, username, emailVerified } =
-      parsed.data;
+    const {
+      email,
+      password,
+      displayName,
+      username,
+      emailVerified,
+      adminApiPermissions,
+    } = parsed.data;
+
+    if (adminApiPermissions !== undefined) {
+      const missingClientIds = await findMissingPermissionClientIds(
+        adminApiPermissions,
+      );
+      if (missingClientIds.length > 0) {
+        return {
+          success: false,
+          error: `Unknown OAuth client: ${missingClientIds.join(", ")}`,
+        };
+      }
+    }
 
     // Check if user exists
     const existingUser = await db.query.users.findFirst({
@@ -99,6 +118,10 @@ export async function updateUser(
 
     if (emailVerified !== undefined) {
       updateData.emailVerified = emailVerified;
+    }
+
+    if (adminApiPermissions !== undefined) {
+      updateData.adminApiPermissions = JSON.stringify(adminApiPermissions);
     }
 
     // Update user

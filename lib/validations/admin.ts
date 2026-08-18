@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SUPPORTED_SCOPES } from "./oauth";
+import { isReadOAuthClientsPermission } from "@/lib/admin-api/permissions";
 
 const redirectUriSchema = z
   .string()
@@ -173,6 +174,15 @@ export type SetClientDefaultRoleInput = z.infer<
 export type SetUserRolesInput = z.infer<typeof setUserRolesSchema>;
 
 // User management schemas
+const adminApiPermissionsSchema = z
+  .array(
+    z.string().refine(isReadOAuthClientsPermission, {
+      message:
+        "Permission must be read:oauth_clients:all or read:oauth_clients:<client ids>",
+    }),
+  )
+  .max(1, "Only one read:oauth_clients permission can be assigned");
+
 export const createUserSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -186,6 +196,7 @@ export const createUserSchema = z.object({
     .optional()
     .nullable(),
   emailVerified: z.boolean().default(false),
+  adminApiPermissions: adminApiPermissionsSchema.default([]),
 });
 
 export const updateUserSchema = z.object({
@@ -205,7 +216,8 @@ export const updateUserSchema = z.object({
     .optional()
     .nullable(),
   emailVerified: z.boolean().optional(),
+  adminApiPermissions: adminApiPermissionsSchema.optional(),
 });
 
-export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type CreateUserInput = z.input<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
