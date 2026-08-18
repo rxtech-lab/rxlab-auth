@@ -204,12 +204,12 @@ describe("updateUser", () => {
 
   test("should persist the OAuth client admin API permission", async () => {
     const result = await updateUser("user-123", {
-      adminApiPermissions: ["read:oauth_clients:all"],
+      adminApiPermissions: ["read:oauth_clients:all", "read:user:all"],
     });
 
     expect(result.success).toBe(true);
     expect(updatedUserData?.adminApiPermissions).toBe(
-      '["read:oauth_clients:all"]',
+      '["read:oauth_clients:all","read:user:all"]',
     );
   });
 });

@@ -174,4 +174,17 @@ describe("createUser", () => {
       '["read:oauth_clients:client_1,client_2"]',
     );
   });
+
+  test("should persist OAuth-client and user-read permissions together", async () => {
+    const result = await createUser({
+      email: "identity-reader@example.com",
+      password: "password123",
+      adminApiPermissions: ["read:oauth_clients:all", "read:user:all"],
+    });
+
+    expect(result.success).toBe(true);
+    expect(insertedUser?.adminApiPermissions).toBe(
+      '["read:oauth_clients:all","read:user:all"]',
+    );
+  });
 });

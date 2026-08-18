@@ -146,6 +146,27 @@ describe("updateUserSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  test("should accept both supported admin API permissions", () => {
+    const result = updateUserSchema.safeParse({
+      adminApiPermissions: ["read:oauth_clients:all", "read:user:all"],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test("should reject scoped or duplicate user-read permissions", () => {
+    expect(
+      updateUserSchema.safeParse({
+        adminApiPermissions: ["read:user:user_1"],
+      }).success,
+    ).toBe(false);
+    expect(
+      updateUserSchema.safeParse({
+        adminApiPermissions: ["read:user:all", "read:user:all"],
+      }).success,
+    ).toBe(false);
+  });
+
   test("should accept null password to keep existing", () => {
     const result = updateUserSchema.safeParse({
       email: "test@example.com",
