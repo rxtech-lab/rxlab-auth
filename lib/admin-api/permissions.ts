@@ -4,6 +4,13 @@ export const READ_OAUTH_CLIENTS_PERMISSION = {
   description: "Search and list OAuth client metadata through admin APIs.",
 } as const;
 
+export const READ_USERS_PERMISSION = {
+  key: "read:user:all",
+  title: "Read users",
+  description:
+    "Search and list RxLab identities through the admin users API. Returns only ID, name, email, and profile image.",
+} as const;
+
 const READ_OAUTH_CLIENTS_PREFIX = `${READ_OAUTH_CLIENTS_PERMISSION.key}:`;
 
 export type ReadOAuthClientsAccess =
@@ -102,6 +109,24 @@ export function buildReadOAuthClientsPermissions(
     : [];
 }
 
+export function hasReadUsersPermission(
+  permissions: readonly string[],
+): boolean {
+  return permissions.includes(READ_USERS_PERMISSION.key);
+}
+
+export function getReadUsersPermissionEnabled(
+  storedPermissions: string | null | undefined,
+): boolean {
+  return hasReadUsersPermission(
+    parseStoredAdminApiPermissions(storedPermissions),
+  );
+}
+
+export function buildReadUsersPermissions(enabled: boolean): string[] {
+  return enabled ? [READ_USERS_PERMISSION.key] : [];
+}
+
 export function isReadOAuthClientsPermission(value: string): boolean {
   if (value === `${READ_OAUTH_CLIENTS_PREFIX}all`) return true;
   if (!value.startsWith(READ_OAUTH_CLIENTS_PREFIX)) return false;
@@ -115,5 +140,11 @@ export function isReadOAuthClientsPermission(value: string): boolean {
         !clientId.includes(":") &&
         !/\s/.test(clientId),
     )
+  );
+}
+
+export function isSupportedAdminApiPermission(value: string): boolean {
+  return (
+    isReadOAuthClientsPermission(value) || value === READ_USERS_PERMISSION.key
   );
 }

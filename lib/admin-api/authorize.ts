@@ -5,18 +5,20 @@ import { users } from "@/lib/db/schema";
 import { requireBearerToken } from "@/lib/oauth/bearer";
 import {
   READ_OAUTH_CLIENTS_PERMISSION,
+  READ_USERS_PERMISSION,
   getReadOAuthClientsAccess,
+  hasReadUsersPermission,
   parseStoredAdminApiPermissions,
   type ReadOAuthClientsAccess,
 } from "@/lib/admin-api/permissions";
 
-export type OAuthClientReadAuthorization =
-  | { ok: true; access: Exclude<ReadOAuthClientsAccess, { scope: "none" }> }
+type AdminApiPermissionAuthorization =
+  | { ok: true; permissions: string[] }
   | { ok: false; response: NextResponse };
 
-export async function authorizeOAuthClientReadRequest(
+async function authorizeAdminApiPermissionRequest(
   request: NextRequest,
-): Promise<OAuthClientReadAuthorization> {
+): Promise<AdminApiPermissionAuthorization> {
   const bearer = await requireBearerToken(request);
   if (!bearer.ok) return bearer;
 
@@ -51,8 +53,24 @@ export async function authorizeOAuthClientReadRequest(
     };
   }
 
+  return {
+    ok: true,
+    permissions: parseStoredAdminApiPermissions(user.adminApiPermissions),
+  };
+}
+
+export type OAuthClientReadAuthorization =
+  | { ok: true; access: Exclude<ReadOAuthClientsAccess, { scope: "none" }> }
+  | { ok: false; response: NextResponse };
+
+export async function authorizeOAuthClientReadRequest(
+  request: NextRequest,
+): Promise<OAuthClientReadAuthorization> {
+  const authorization = await authorizeAdminApiPermissionRequest(request);
+  if (!authorization.ok) return authorization;
+
   const access = getReadOAuthClientsAccess(
-    parseStoredAdminApiPermissions(user.adminApiPermissions),
+    authorization.permissions,
   );
   if (access.scope === "none") {
     return {
@@ -69,4 +87,31 @@ export async function authorizeOAuthClientReadRequest(
   }
 
   return { ok: true, access };
+}
+
+export type UserReadAuthorization =
+  | { ok: true }
+  | { ok: false; response: NextResponse };
+
+export async function authorizeUserReadRequest(
+  request: NextRequest,
+): Promise<UserReadAuthorization> {
+  const authorization = await authorizeAdminApiPermissionRequest(request);
+  if (!authorization.ok) return authorization;
+
+  if (!hasReadUsersPermission(authorization.permissions)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "insufficient_permission",
+          error_description: `Requires ${READ_USERS_PERMISSION.key}`,
+          required_permission: READ_USERS_PERMISSION.key,
+        },
+        { status: 403 },
+      ),
+    };
+  }
+
+  return { ok: true };
 }

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   READ_OAUTH_CLIENTS_PERMISSION,
+  READ_USERS_PERMISSION,
   type ReadOAuthClientsPermissionSelection,
 } from "@/lib/admin-api/permissions";
 
@@ -24,27 +25,34 @@ interface OAuthClientOption {
 
 interface UserAdminApiPermissionsProps {
   clients: OAuthClientOption[];
-  value: ReadOAuthClientsPermissionSelection;
+  oauthClientsValue: ReadOAuthClientsPermissionSelection;
+  readUsersEnabled: boolean;
   disabled?: boolean;
-  onChange: (value: ReadOAuthClientsPermissionSelection) => void;
+  onOAuthClientsChange: (value: ReadOAuthClientsPermissionSelection) => void;
+  onReadUsersChange: (enabled: boolean) => void;
 }
 
 export function UserAdminApiPermissions({
   clients,
-  value,
+  oauthClientsValue,
+  readUsersEnabled,
   disabled = false,
-  onChange,
+  onOAuthClientsChange,
+  onReadUsersChange,
 }: UserAdminApiPermissionsProps) {
   const setClientSelected = (clientId: string, selected: boolean) => {
     const clientIds = selected
-      ? [...value.clientIds, clientId]
-      : value.clientIds.filter((id) => id !== clientId);
+      ? [...oauthClientsValue.clientIds, clientId]
+      : oauthClientsValue.clientIds.filter((id) => id !== clientId);
 
-    onChange({ ...value, clientIds: Array.from(new Set(clientIds)) });
+    onOAuthClientsChange({
+      ...oauthClientsValue,
+      clientIds: Array.from(new Set(clientIds)),
+    });
   };
 
   const selectedClientNames = clients
-    .filter((client) => value.clientIds.includes(client.id))
+    .filter((client) => oauthClientsValue.clientIds.includes(client.id))
     .map((client) => client.name);
 
   return (
@@ -69,23 +77,25 @@ export function UserAdminApiPermissions({
           </div>
           <Switch
             id="read-oauth-clients-permission"
-            checked={value.enabled}
-            onCheckedChange={(enabled) => onChange({ ...value, enabled })}
+            checked={oauthClientsValue.enabled}
+            onCheckedChange={(enabled) =>
+              onOAuthClientsChange({ ...oauthClientsValue, enabled })
+            }
             disabled={disabled}
             data-testid="read-oauth-clients-toggle"
           />
         </div>
 
-        {value.enabled && (
+        {oauthClientsValue.enabled && (
           <div className="space-y-3 border-t pt-3">
             <div className="space-y-2">
               <Label htmlFor="read-oauth-clients-scope">Client access</Label>
               <select
                 id="read-oauth-clients-scope"
-                value={value.scope}
+                value={oauthClientsValue.scope}
                 onChange={(event) =>
-                  onChange({
-                    ...value,
+                  onOAuthClientsChange({
+                    ...oauthClientsValue,
                     scope: event.target.value as "all" | "selected",
                   })
                 }
@@ -98,7 +108,7 @@ export function UserAdminApiPermissions({
               </select>
             </div>
 
-            {value.scope === "selected" && (
+            {oauthClientsValue.scope === "selected" && (
               <div className="space-y-2">
                 <Label>OAuth clients</Label>
                 <DropdownMenu>
@@ -112,8 +122,8 @@ export function UserAdminApiPermissions({
                         data-testid="read-oauth-clients-picker"
                       >
                         <ListFilter className="size-4" />
-                        {value.clientIds.length > 0
-                          ? `${value.clientIds.length} selected`
+                        {oauthClientsValue.clientIds.length > 0
+                          ? `${oauthClientsValue.clientIds.length} selected`
                           : "Select OAuth clients"}
                       </Button>
                     }
@@ -126,7 +136,9 @@ export function UserAdminApiPermissions({
                       {clients.map((client) => (
                         <DropdownMenuCheckboxItem
                           key={client.id}
-                          checked={value.clientIds.includes(client.id)}
+                          checked={oauthClientsValue.clientIds.includes(
+                            client.id,
+                          )}
                           onCheckedChange={(checked) =>
                             setClientSelected(client.id, checked)
                           }
@@ -155,6 +167,29 @@ export function UserAdminApiPermissions({
             )}
           </div>
         )}
+      </div>
+
+      <div className="space-y-3 rounded-lg border p-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="read-users-permission">
+              {READ_USERS_PERMISSION.title}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {READ_USERS_PERMISSION.description}
+            </p>
+            <code className="block text-xs text-muted-foreground">
+              {READ_USERS_PERMISSION.key}
+            </code>
+          </div>
+          <Switch
+            id="read-users-permission"
+            checked={readUsersEnabled}
+            onCheckedChange={onReadUsersChange}
+            disabled={disabled}
+            data-testid="read-users-toggle"
+          />
+        </div>
       </div>
     </div>
   );

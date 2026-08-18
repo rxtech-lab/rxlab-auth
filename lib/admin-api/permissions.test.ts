@@ -1,9 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import {
   buildReadOAuthClientsPermissions,
+  buildReadUsersPermissions,
   getReadOAuthClientsAccess,
   getReadOAuthClientsSelection,
   isReadOAuthClientsPermission,
+  getReadUsersPermissionEnabled,
+  hasReadUsersPermission,
+  isSupportedAdminApiPermission,
   parseStoredAdminApiPermissions,
 } from "./permissions";
 
@@ -63,5 +67,26 @@ describe("OAuth client admin API permissions", () => {
     ).toBe(true);
     expect(isReadOAuthClientsPermission("write:oauth_clients:all")).toBe(false);
     expect(isReadOAuthClientsPermission("read:oauth_clients:")).toBe(false);
+  });
+});
+
+describe("user admin API permission", () => {
+  test("matches only the exact read:user:all permission", () => {
+    expect(hasReadUsersPermission(["read:user:all"])).toBe(true);
+    expect(hasReadUsersPermission(["read:user:user_1"])).toBe(false);
+    expect(hasReadUsersPermission(["read:users:all"])).toBe(false);
+  });
+
+  test("maps stored permission state and builds its canonical value", () => {
+    expect(
+      getReadUsersPermissionEnabled(JSON.stringify(["read:user:all"])),
+    ).toBe(true);
+    expect(buildReadUsersPermissions(true)).toEqual(["read:user:all"]);
+    expect(buildReadUsersPermissions(false)).toEqual([]);
+  });
+
+  test("is included in the supported admin API permission set", () => {
+    expect(isSupportedAdminApiPermission("read:user:all")).toBe(true);
+    expect(isSupportedAdminApiPermission("read:user:user_1")).toBe(false);
   });
 });

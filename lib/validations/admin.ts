@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { SUPPORTED_SCOPES } from "./oauth";
-import { isReadOAuthClientsPermission } from "@/lib/admin-api/permissions";
+import {
+  isReadOAuthClientsPermission,
+  isSupportedAdminApiPermission,
+  READ_USERS_PERMISSION,
+} from "@/lib/admin-api/permissions";
 
 const redirectUriSchema = z
   .string()
@@ -176,12 +180,24 @@ export type SetUserRolesInput = z.infer<typeof setUserRolesSchema>;
 // User management schemas
 const adminApiPermissionsSchema = z
   .array(
-    z.string().refine(isReadOAuthClientsPermission, {
+    z.string().refine(isSupportedAdminApiPermission, {
       message:
-        "Permission must be read:oauth_clients:all or read:oauth_clients:<client ids>",
+        "Permission must be read:oauth_clients:all, read:oauth_clients:<client ids>, or read:user:all",
     }),
   )
-  .max(1, "Only one read:oauth_clients permission can be assigned");
+  .max(2, "Only supported admin API permissions can be assigned once")
+  .refine(
+    (permissions) =>
+      permissions.filter(isReadOAuthClientsPermission).length <= 1,
+    { message: "Only one read:oauth_clients permission can be assigned" },
+  )
+  .refine(
+    (permissions) =>
+      permissions.filter(
+        (permission) => permission === READ_USERS_PERMISSION.key,
+      ).length <= 1,
+    { message: "Only one read:user:all permission can be assigned" },
+  );
 
 export const createUserSchema = z.object({
   email: z.string().email("Please enter a valid email address"),

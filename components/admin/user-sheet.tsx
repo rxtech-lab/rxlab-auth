@@ -27,7 +27,9 @@ import {
 import { UserAdminApiPermissions } from "@/components/admin/user-admin-api-permissions";
 import {
   buildReadOAuthClientsPermissions,
+  buildReadUsersPermissions,
   getReadOAuthClientsSelection,
+  getReadUsersPermissionEnabled,
   type ReadOAuthClientsPermissionSelection,
 } from "@/lib/admin-api/permissions";
 
@@ -81,6 +83,11 @@ function UserForm({
         ),
       };
     });
+  const [readUsersEnabled, setReadUsersEnabled] = useState(() =>
+    getReadUsersPermissionEnabled(
+      mode === "edit" && user ? user.adminApiPermissions : null,
+    ),
+  );
   const [roleAssignments, setRoleAssignments] = useState<
     UserRoleAssignmentValue[]
   >([]);
@@ -108,9 +115,10 @@ function UserForm({
       return;
     }
 
-    const adminApiPermissions = buildReadOAuthClientsPermissions(
-      adminApiPermission,
-    );
+    const adminApiPermissions = [
+      ...buildReadOAuthClientsPermissions(adminApiPermission),
+      ...buildReadUsersPermissions(readUsersEnabled),
+    ];
 
     startTransition(async () => {
       if (mode === "create") {
@@ -275,8 +283,10 @@ function UserForm({
 
       <UserAdminApiPermissions
         clients={roleOptions.map(({ id, name }) => ({ id, name }))}
-        value={adminApiPermission}
-        onChange={setAdminApiPermission}
+        oauthClientsValue={adminApiPermission}
+        readUsersEnabled={readUsersEnabled}
+        onOAuthClientsChange={setAdminApiPermission}
+        onReadUsersChange={setReadUsersEnabled}
         disabled={isPending}
       />
 
