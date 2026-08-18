@@ -10,6 +10,16 @@ const e2eDatabaseUrl = `file:${join(
   tmpdir(),
   `rxlab-auth-e2e-${process.pid}-${Date.now()}.sqlite`,
 )}`;
+function readE2EPort(name: string, fallback: number): number {
+  const port = Number(process.env[name] ?? fallback);
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error(`${name} must be an integer between 1 and 65535`);
+  }
+  return port;
+}
+
+const configuredE2EAppPort = readE2EPort("E2E_APP_PORT", 3000);
+const e2eBaseUrl = `http://localhost:${configuredE2EAppPort}`;
 
 // Test JWT keys for E2E testing (valid RSA key pair)
 const testPrivateKey = `-----BEGIN PRIVATE KEY-----
@@ -65,7 +75,7 @@ export default defineConfig({
   },
 
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: e2eBaseUrl,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -86,8 +96,8 @@ export default defineConfig({
       reuseExistingServer: true,
     },
     {
-      command: "bun run dev",
-      url: "http://localhost:3000",
+      command: `bun run dev -- --port ${configuredE2EAppPort}`,
+      url: e2eBaseUrl,
       timeout: 30 * 1000,
       reuseExistingServer: true,
       env: {
@@ -110,7 +120,7 @@ export default defineConfig({
         RESEND_API_KEY: "re_mock_key",
 
         // OAuth/OIDC
-        OAUTH_ISSUER_URL: "http://localhost:3000",
+        OAUTH_ISSUER_URL: e2eBaseUrl,
         JWT_PRIVATE_KEY: testPrivateKey.replace(/\n/g, "\\n"),
         JWT_PUBLIC_KEY: testPublicKey.replace(/\n/g, "\\n"),
 
@@ -121,13 +131,13 @@ export default defineConfig({
         BLOB_READ_WRITE_TOKEN: "vercel_blob_mock",
 
         // App
-        NEXT_PUBLIC_APP_URL: "http://localhost:3000",
+        NEXT_PUBLIC_APP_URL: e2eBaseUrl,
         NEXT_PUBLIC_APP_NAME: "RxLab Auth",
 
         // WebAuthn
         WEBAUTHN_RP_ID: "localhost",
         WEBAUTHN_RP_NAME: "RxLab Auth",
-        WEBAUTHN_ORIGIN: "http://localhost:3000",
+        WEBAUTHN_ORIGIN: e2eBaseUrl,
       },
     },
   ],
