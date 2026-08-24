@@ -3,6 +3,7 @@ export * from "./users";
 export * from "./passkeys";
 export * from "./email-verification-tokens";
 export * from "./password-reset-tokens";
+export * from "./social-accounts";
 
 // OAuth-related schemas
 export * from "./oauth-clients";

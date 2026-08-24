@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { Loader2 } from "lucide-react";
+import { getEnabledSocialProviders } from "@/lib/auth/social/providers";
 
 export const metadata = {
   title: "Sign In - RxLab Auth",
@@ -16,9 +17,11 @@ function LoginFormFallback() {
 }
 
 export default function LoginPage() {
+  const socialProviders = getEnabledSocialProviders();
+
   return (
     <Suspense fallback={<LoginFormFallback />}>
-      <LoginForm />
+      <LoginForm socialProviders={socialProviders} />
     </Suspense>
   );
 }

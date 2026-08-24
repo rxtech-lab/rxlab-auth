@@ -7,7 +7,6 @@ import path from "path";
 // Persist database client across HMR for in-memory databases
 const globalForDb = globalThis as unknown as {
   client: Client | undefined;
-  db: ReturnType<typeof drizzle<typeof schema>> | undefined;
   initialized: boolean | undefined;
 };
 
@@ -18,12 +17,13 @@ const client =
     authToken: process.env.TURSO_AUTH_TOKEN,
   });
 
-export const db = globalForDb.db ?? drizzle(client, { schema });
+// Recreate the Drizzle wrapper when this module reloads so newly added schema
+// exports are reflected in db.query while preserving the underlying client.
+export const db = drizzle(client, { schema });
 
 // Preserve across HMR in development
 if (process.env.NODE_ENV !== "production") {
   globalForDb.client = client;
-  globalForDb.db = db;
 }
 
 export type Database = typeof db;

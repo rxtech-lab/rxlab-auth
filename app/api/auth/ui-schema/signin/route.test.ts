@@ -17,6 +17,7 @@ const FIRST_PARTY_CLIENT = {
 };
 
 const findClient = mock();
+const getEnabledSocialProvidersMock = mock();
 
 mock.module("@/lib/db", () => ({
   db: {
@@ -24,6 +25,10 @@ mock.module("@/lib/db", () => ({
       oauthClients: { findFirst: findClient },
     },
   },
+}));
+
+mock.module("@/lib/auth/social/providers", () => ({
+  getEnabledSocialProviders: getEnabledSocialProvidersMock,
 }));
 
 const { GET } = await import("./route");
@@ -36,6 +41,21 @@ function makeRequest(search: string = ""): Request {
 describe("GET /api/auth/ui-schema/signin", () => {
   beforeEach(() => {
     findClient.mockReset();
+    getEnabledSocialProvidersMock.mockReset();
+    getEnabledSocialProvidersMock.mockReturnValue([
+      {
+        id: "github",
+        label: "Continue with GitHub",
+        iconPath: "/brand/github-invertocat-black.svg",
+        darkIconPath: "/brand/github-invertocat-white.svg",
+      },
+      {
+        id: "google",
+        label: "Continue with Google",
+        iconPath: "/brand/google-g.svg",
+        darkIconPath: "/brand/google-g.svg",
+      },
+    ]);
   });
 
   test("first-party client returns password + passkey methods", async () => {
@@ -51,6 +71,23 @@ describe("GET /api/auth/ui-schema/signin", () => {
 
     const methodIds = body.supportedMethods.map((m: { id: string }) => m.id);
     expect(methodIds).toEqual(["password", "passkey"]);
+    expect(body.identityProviders).toEqual([
+      {
+        id: "github",
+        label: "Continue with GitHub",
+        iconUrl: "https://auth.rxlab.app/brand/github-invertocat-black.svg",
+        darkIconUrl:
+          "https://auth.rxlab.app/brand/github-invertocat-white.svg",
+        authorizationParameters: { identity_provider: "github" },
+      },
+      {
+        id: "google",
+        label: "Continue with Google",
+        iconUrl: "https://auth.rxlab.app/brand/google-g.svg",
+        darkIconUrl: "https://auth.rxlab.app/brand/google-g.svg",
+        authorizationParameters: { identity_provider: "google" },
+      },
+    ]);
 
     const fieldKeys = body.fields.map((f: { key: string }) => f.key);
     expect(fieldKeys).toEqual(["email", "password"]);
@@ -71,6 +108,7 @@ describe("GET /api/auth/ui-schema/signin", () => {
     const body = await res.json();
     expect(body.title).toBe("Sign in to RxLab");
     expect(body.supportedMethods).toEqual([]);
+    expect(body.identityProviders).toEqual([]);
     // findClient must not be invoked when client_id is absent.
     expect(findClient).not.toHaveBeenCalled();
   });
@@ -82,6 +120,7 @@ describe("GET /api/auth/ui-schema/signin", () => {
     expect(Object.keys(body).sort()).toEqual([
       "fields",
       "flow",
+      "identityProviders",
       "links",
       "submitLabel",
       "supportedMethods",

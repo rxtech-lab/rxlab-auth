@@ -35,6 +35,18 @@ export interface UiMethod {
   primary: boolean;
 }
 
+export type IdentityProviderId = "github" | "google";
+
+export interface UiIdentityProvider {
+  id: IdentityProviderId;
+  label: string;
+  iconUrl: string;
+  darkIconUrl: string;
+  authorizationParameters: {
+    identity_provider: IdentityProviderId;
+  };
+}
+
 export interface UiLink {
   id: string;
   label: string;
@@ -47,6 +59,7 @@ export interface UiSchema {
   submitLabel: string;
   fields: UiField[];
   supportedMethods: UiMethod[];
+  identityProviders?: UiIdentityProvider[];
   links: UiLink[];
 }
 
@@ -119,10 +132,16 @@ function nameField(): UiField {
 
 export interface BuildSigninInput {
   client: OAuthClientLite | null;
+  identityProviders?: Array<{
+    id: IdentityProviderId;
+    label: string;
+    iconUrl: string;
+    darkIconUrl: string;
+  }>;
 }
 
 export function buildSigninSchema(input: BuildSigninInput): UiSchema {
-  const { client } = input;
+  const { client, identityProviders = [] } = input;
   const passwordAllowed = client?.signInPermission === "all";
 
   const methods: UiMethod[] = [];
@@ -149,6 +168,12 @@ export function buildSigninSchema(input: BuildSigninInput): UiSchema {
     submitLabel: "Sign in",
     fields: [emailField(), passwordField({ autocomplete: "current-password" })],
     supportedMethods: methods,
+    identityProviders: passwordAllowed
+      ? identityProviders.map((provider) => ({
+          ...provider,
+          authorizationParameters: { identity_provider: provider.id },
+        }))
+      : [],
     links: [
       { id: "forgot-password", label: "Forgot password?", href: "/reset" },
       {

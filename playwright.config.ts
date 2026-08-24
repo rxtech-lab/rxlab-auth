@@ -20,6 +20,7 @@ function readE2EPort(name: string, fallback: number): number {
 
 const configuredE2EAppPort = readE2EPort("E2E_APP_PORT", 3000);
 const e2eBaseUrl = `http://localhost:${configuredE2EAppPort}`;
+const e2eDistDir = `.next/e2e-${process.pid}`;
 
 // Test JWT keys for E2E testing (valid RSA key pair)
 const testPrivateKey = `-----BEGIN PRIVATE KEY-----
@@ -104,6 +105,7 @@ export default defineConfig({
         // Testing flags (both server and client side)
         E2E_SKIP_EMAIL_VERIFICATION: "true",
         NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION: "true",
+        NEXT_DIST_DIR: e2eDistDir,
 
         // Database (unique file-backed SQLite database for this E2E run)
         TURSO_DATABASE_URL: e2eDatabaseUrl,
@@ -121,6 +123,11 @@ export default defineConfig({
 
         // OAuth/OIDC
         OAUTH_ISSUER_URL: e2eBaseUrl,
+        GITHUB_OAUTH_CLIENT_ID: "e2e-github-client",
+        GITHUB_OAUTH_CLIENT_SECRET: "e2e-github-secret",
+        GOOGLE_OAUTH_CLIENT_ID: "e2e-google-client",
+        GOOGLE_OAUTH_CLIENT_SECRET: "e2e-google-secret",
+        SOCIAL_OAUTH_TEST_BASE_URL: "http://localhost:3001",
         JWT_PRIVATE_KEY: testPrivateKey.replace(/\n/g, "\\n"),
         JWT_PUBLIC_KEY: testPublicKey.replace(/\n/g, "\\n"),
 
