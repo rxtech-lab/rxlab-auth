@@ -1,21 +1,67 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Loader2, KeyRound } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/actions/auth/login";
 import { usePasskey } from "@/hooks/use-passkey";
+import type { SocialProviderDescriptor } from "@/lib/auth/social/providers";
+import { socialSigninErrorMessage } from "@/lib/auth/social/errors";
 
-export function LoginForm() {
+interface LoginFormProps {
+  socialProviders?: SocialProviderDescriptor[];
+}
+
+function SocialProviderIcon({
+  provider,
+}: {
+  provider: SocialProviderDescriptor;
+}) {
+  if (provider.id === "google") {
+    return (
+      <Image
+        src={provider.iconPath}
+        alt=""
+        width={20}
+        height={20}
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return (
+    <span aria-hidden="true" className="inline-flex h-4 w-[17px]">
+      <Image
+        src={provider.iconPath}
+        alt=""
+        width={98}
+        height={96}
+        className="h-4 w-auto dark:hidden"
+      />
+      <Image
+        src={provider.darkIconPath}
+        alt=""
+        width={98}
+        height={96}
+        className="hidden h-4 w-auto dark:block"
+      />
+    </span>
+  );
+}
+
+export function LoginForm({ socialProviders = [] }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/account";
   const resetSuccess = searchParams.get("reset") === "true";
+  const socialError = searchParams.get("error");
+  const socialErrorMessage = socialSigninErrorMessage(socialError);
   const registerHref =
     redirectTo === "/account"
       ? "/register"
@@ -81,13 +127,13 @@ export function LoginForm() {
         </motion.div>
       )}
 
-      {(error || passkeyError) && (
+      {(error || passkeyError || socialErrorMessage) && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="bg-destructive/10 text-destructive text-sm rounded-xl p-3.5"
         >
-          {error || passkeyError}
+          {error || passkeyError || socialErrorMessage}
         </motion.div>
       )}
 
@@ -149,25 +195,45 @@ export function LoginForm() {
         </div>
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={handlePasskeyLogin}
-        disabled={isLoading}
-      >
-        {isPasskeyLoading ? (
-          <>
-            <Loader2 className="size-4 animate-spin" />
-            Authenticating...
-          </>
-        ) : (
-          <>
-            <KeyRound className="size-4" />
-            Sign in with Passkey
-          </>
-        )}
-      </Button>
+      <div className="space-y-3">
+        {socialProviders.map((provider) => {
+          const params = new URLSearchParams({ redirect: redirectTo });
+          return (
+            <a
+              key={provider.id}
+              href={`/api/auth/social/${provider.id}?${params.toString()}`}
+              className={buttonVariants({
+                variant: "outline",
+                className: "w-full",
+              })}
+              data-testid={`social-signin-${provider.id}`}
+            >
+              <SocialProviderIcon provider={provider} />
+              {provider.label}
+            </a>
+          );
+        })}
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={handlePasskeyLogin}
+          disabled={isLoading}
+        >
+          {isPasskeyLoading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Authenticating...
+            </>
+          ) : (
+            <>
+              <KeyRound className="size-4" />
+              Sign in with Passkey
+            </>
+          )}
+        </Button>
+      </div>
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}

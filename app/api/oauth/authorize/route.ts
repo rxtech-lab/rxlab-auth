@@ -11,6 +11,11 @@ import {
 } from "@/lib/validations/oauth";
 import { matchRedirectUri } from "@/lib/oauth/redirect-uri";
 import { eq, and } from "drizzle-orm";
+import {
+  getSocialProvider,
+  isSocialProviderId,
+} from "@/lib/auth/social/providers";
+import { buildUnauthenticatedAuthorizationRedirect } from "@/lib/oauth/login-redirect";
 
 function isBrowserRequest(request: Request): boolean {
   const accept = request.headers.get("accept") || "";
@@ -37,6 +42,20 @@ function errorResponse(
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+  const identityProvider = searchParams.get("identity_provider");
+
+  if (
+    identityProvider &&
+    (!isSocialProviderId(identityProvider) ||
+      !getSocialProvider(identityProvider))
+  ) {
+    return errorResponse(
+      request,
+      "invalid_request",
+      "The requested identity provider is not available",
+      400,
+    );
+  }
 
   // Parse and validate request parameters
   const params = {
@@ -101,14 +120,16 @@ export async function GET(request: NextRequest) {
   if (!session.isLoggedIn || !session.userId) {
     // Store OAuth params in session and redirect to login
     // Add fresh_login flag so we skip account selection after login
-    const loginUrl = new URL("/login", request.url);
-    const redirectParams = new URLSearchParams(searchParams.toString());
-    redirectParams.set("fresh_login", "true");
-    loginUrl.searchParams.set(
-      "redirect",
-      `/api/oauth/authorize?${redirectParams.toString()}`
+    return NextResponse.redirect(
+      buildUnauthenticatedAuthorizationRedirect({
+        requestUrl: request.url,
+        searchParams,
+        identityProvider:
+          identityProvider && isSocialProviderId(identityProvider)
+            ? identityProvider
+            : null,
+      }),
     );
-    return NextResponse.redirect(loginUrl);
   }
 
   // If user is already signed in and hasn't confirmed their account,

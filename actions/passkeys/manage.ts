@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { passkeys } from "@/lib/db/schema";
+import { passkeys, socialAccounts, users } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { passkeyNameSchema } from "@/lib/validations/auth";
 import { eq, and } from "drizzle-orm";
@@ -78,21 +78,28 @@ export async function deletePasskey(passkeyId: string): Promise<PasskeyResult> {
       };
     }
 
-    // Check if this is the only passkey and user has no password
-    const userPasskeys = await db.query.passkeys.findMany({
-      where: eq(passkeys.userId, session.userId!),
-    });
+    const [userPasskeys, userSocialAccounts, user] = await Promise.all([
+      db.query.passkeys.findMany({
+        where: eq(passkeys.userId, session.userId!),
+      }),
+      db.query.socialAccounts.findMany({
+        where: eq(socialAccounts.userId, session.userId!),
+        columns: { id: true },
+      }),
+      db.query.users.findFirst({
+        where: eq(users.id, session.userId!),
+      }),
+    ]);
 
-    // Get user to check if they have a password
-    const { users } = await import("@/lib/db/schema");
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.userId!),
-    });
-
-    if (userPasskeys.length === 1 && !user?.passwordHash) {
+    if (
+      userPasskeys.length === 1 &&
+      !user?.passwordHash &&
+      userSocialAccounts.length === 0
+    ) {
       return {
         success: false,
-        error: "Cannot delete your only passkey. Add a password first or keep at least one passkey.",
+        error:
+          "Cannot delete your only sign-in method. Add another passkey or connect a social account first.",
       };
     }
 

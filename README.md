@@ -71,6 +71,10 @@ RESEND_API_KEY=your_resend_api_key
 
 # OAuth (optional)
 OAUTH_ISSUER_URL=your_oauth_issuer_url
+GITHUB_OAUTH_CLIENT_ID=your_github_oauth_client_id
+GITHUB_OAUTH_CLIENT_SECRET=your_github_oauth_client_secret
+GOOGLE_OAUTH_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_OAUTH_CLIENT_SECRET=your_google_oauth_client_secret
 
 # WebAuthn
 WEBAUTHN_ORIGIN=http://localhost:3000
@@ -81,6 +85,28 @@ WEBAUTHN_RP_NAME=RxLab Auth
 UPSTASH_REDIS_REST_URL=your_redis_url
 UPSTASH_REDIS_REST_TOKEN=your_redis_token
 ```
+
+Register these provider callback URLs, using the same origin as
+`OAUTH_ISSUER_URL`:
+
+```text
+https://your-auth-host/api/auth/social/github/callback
+https://your-auth-host/api/auth/social/google/callback
+```
+
+Configured providers appear on the web login form and in
+`GET /api/auth/ui-schema/signin?client_id=<id>` under the additive
+`identityProviders` array. Each provider includes absolute `iconUrl` and
+`darkIconUrl` asset URLs. Native iOS and macOS clients can use the appropriate
+icon for the current appearance and pass the returned `authorizationParameters`
+into `/api/oauth/authorize` to start the selected provider while keeping the
+normal authorization-code + PKCE flow back to the app.
+
+When a verified social email matches an existing account, RxLab Auth asks the
+user to approve the connection before linking it. When no account exists, it
+asks for confirmation before creating a social-only account. Signed-in users
+can review and disconnect providers from the Profile page; the final sign-in
+method cannot be removed until another method, such as a passkey, is available.
 
 ### Installation
 

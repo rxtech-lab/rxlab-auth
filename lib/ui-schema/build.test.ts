@@ -19,7 +19,24 @@ const RESTRICTED: OAuthClientLite = {
 
 describe("buildSigninSchema", () => {
   test("first-party client exposes both passkey and password", () => {
-    const schema = buildSigninSchema({ client: FIRST_PARTY });
+    const schema = buildSigninSchema({
+      client: FIRST_PARTY,
+      identityProviders: [
+        {
+          id: "github",
+          label: "Continue with GitHub",
+          iconUrl: "https://auth.rxlab.app/brand/github-invertocat-black.svg",
+          darkIconUrl:
+            "https://auth.rxlab.app/brand/github-invertocat-white.svg",
+        },
+        {
+          id: "google",
+          label: "Continue with Google",
+          iconUrl: "https://auth.rxlab.app/brand/google-g.svg",
+          darkIconUrl: "https://auth.rxlab.app/brand/google-g.svg",
+        },
+      ],
+    });
 
     expect(schema.flow).toBe("signin");
     expect(schema.title).toBe("Sign in to macOS Test App");
@@ -28,17 +45,36 @@ describe("buildSigninSchema", () => {
     const methodIds = schema.supportedMethods.map((m) => m.id);
     expect(methodIds).toEqual(["password", "passkey"]);
     expect(schema.supportedMethods[0]?.primary).toBe(true);
+    expect(schema.identityProviders).toEqual([
+      {
+        id: "github",
+        label: "Continue with GitHub",
+        iconUrl: "https://auth.rxlab.app/brand/github-invertocat-black.svg",
+        darkIconUrl:
+          "https://auth.rxlab.app/brand/github-invertocat-white.svg",
+        authorizationParameters: { identity_provider: "github" },
+      },
+      {
+        id: "google",
+        label: "Continue with Google",
+        iconUrl: "https://auth.rxlab.app/brand/google-g.svg",
+        darkIconUrl: "https://auth.rxlab.app/brand/google-g.svg",
+        authorizationParameters: { identity_provider: "google" },
+      },
+    ]);
   });
 
   test("client with signInPermission!=all hides password + passkey", () => {
     const schema = buildSigninSchema({ client: RESTRICTED });
     expect(schema.supportedMethods).toEqual([]);
+    expect(schema.identityProviders).toEqual([]);
   });
 
   test("no client_id falls back to default title", () => {
     const schema = buildSigninSchema({ client: null });
     expect(schema.title).toBe("Sign in to RxLab");
     expect(schema.supportedMethods).toEqual([]);
+    expect(schema.identityProviders).toEqual([]);
   });
 
   test("fields include email + password with derived validation", () => {
