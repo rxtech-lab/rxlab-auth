@@ -275,6 +275,7 @@ async function handleAuthorizationCodeGrant(
   // Always generate refresh token
   const refreshToken = generateRefreshToken();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+  const authenticatedAt = new Date();
 
   await db.insert(oauthRefreshTokens).values({
     id: crypto.randomUUID(),
@@ -283,7 +284,8 @@ async function handleAuthorizationCodeGrant(
     clientId: client.id,
     scopes: JSON.stringify(codeData.scopes),
     expiresAt,
-    createdAt: new Date(),
+    authenticatedAt,
+    createdAt: authenticatedAt,
   });
 
   return NextResponse.json({
@@ -399,6 +401,7 @@ async function handleRefreshTokenGrant(
     clientId: client.id,
     scopes: JSON.stringify(requestedScopes),
     expiresAt,
+    authenticatedAt: storedToken.authenticatedAt ?? storedToken.createdAt,
     createdAt: new Date(),
   });
 

@@ -71,6 +71,13 @@
       "when": 1786975129860,
       "tag": "0009_serious_skin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1787327178774,
+      "tag": "0010_session-auth-time",
+      "breakpoints": true
     }
   ]
 }

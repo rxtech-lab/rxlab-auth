@@ -77,6 +77,7 @@ export async function issueOAuthTokenResponse(params: {
   }
 
   const refreshToken = generateRefreshToken();
+  const authenticatedAt = new Date();
   await db.insert(oauthRefreshTokens).values({
     id: crypto.randomUUID(),
     token: refreshToken,
@@ -84,7 +85,8 @@ export async function issueOAuthTokenResponse(params: {
     clientId: client.id,
     scopes: JSON.stringify(scopes),
     expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-    createdAt: new Date(),
+    authenticatedAt,
+    createdAt: authenticatedAt,
   });
 
   return {

@@ -15,6 +15,9 @@ export const oauthRefreshTokens = sqliteTable(
       .references(() => oauthClients.id, { onDelete: "cascade" }),
     scopes: text("scopes").notNull(), // JSON array
     expiresAt: integer("expires_at", { mode: "timestamp" }),
+    // Original authentication time for this session. Refresh-token rotation
+    // copies this value so activity does not look like a new sign-in.
+    authenticatedAt: integer("authenticated_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     revokedAt: integer("revoked_at", { mode: "timestamp" }),
   },

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import {
@@ -154,7 +155,13 @@ export function UserRow({
       <div className="sm:hidden p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="font-medium truncate">{user.email}</div>
+            <Link
+              href={`/admin/dashboard/users/${user.id}`}
+              className="block truncate font-medium hover:text-primary hover:underline"
+              data-testid={`view-user-${user.id}`}
+            >
+              {user.email}
+            </Link>
             {user.displayName && (
               <p className="text-sm text-muted-foreground truncate">
                 {user.displayName}
@@ -261,7 +268,13 @@ export function UserRow({
       <div className="hidden sm:grid sm:grid-cols-[1fr_120px_100px_50px] gap-4 px-4 py-3 items-center">
         {/* User info */}
         <div className="min-w-0">
-          <div className="font-medium truncate">{user.email}</div>
+          <Link
+            href={`/admin/dashboard/users/${user.id}`}
+            className="block truncate font-medium hover:text-primary hover:underline"
+            data-testid={`view-user-${user.id}`}
+          >
+            {user.email}
+          </Link>
           {user.displayName && (
             <p className="text-sm text-muted-foreground truncate">
               {user.displayName}
