@@ -138,6 +138,11 @@ describe("POST /api/oauth/token - grant_type=password", () => {
       "correct-horse",
     );
     expect(insertValues).toHaveBeenCalled();
+    const insertedRefreshToken = insertValues.mock.calls[0][0];
+    expect(insertedRefreshToken.authenticatedAt).toBeInstanceOf(Date);
+    expect(insertedRefreshToken.createdAt).toEqual(
+      insertedRefreshToken.authenticatedAt,
+    );
     expect(signAccessTokenMock.mock.calls[0][0].roles).toEqual(["admin"]);
   });
 

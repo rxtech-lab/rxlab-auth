@@ -7,6 +7,7 @@ import {
   oauthClientRoles,
 } from "@/lib/db/schema";
 import { ClientDetailTabs } from "@/components/admin/client-detail-tabs";
+import { getClientSignedInUsers } from "@/lib/admin/sign-in-history";
 import { getOpenIDConfiguration } from "@/lib/oauth/discovery";
 import { eq } from "drizzle-orm";
 
@@ -56,6 +57,8 @@ export default async function EditClientPage({ params }: PageProps) {
     orderBy: (table, { asc }) => [asc(table.name)],
   });
 
+  const signedInUsers = await getClientSignedInUsers(id);
+
   const config = getOpenIDConfiguration();
   const endpoints = {
     issuer: config.issuer,
@@ -71,6 +74,7 @@ export default async function EditClientPage({ params }: PageProps) {
       appIds={appIds}
       roles={roles}
       defaultRoleId={client.defaultRoleId}
+      signedInUsers={signedInUsers}
       endpoints={endpoints}
     />
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Settings, Shield, AlertTriangle } from "lucide-react";
+import { Settings, Shield, AlertTriangle, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ClientForm } from "@/components/admin/client-form";
@@ -11,6 +11,8 @@ import { ClientDangerZone } from "@/components/admin/client-danger-zone";
 import { ClientAppIdsCard } from "@/components/admin/client-app-ids-card";
 import { ClientRolesCard } from "@/components/admin/client-roles-card";
 import { OAuthEndpointsCard } from "@/components/admin/oauth-endpoints-card";
+import { SignedInUserList } from "@/components/admin/signed-in-user-list";
+import type { SignedInUser } from "@/lib/admin/sign-in-history";
 import type {
   OAuthClientRole,
   OAuthClientEmailWhitelist,
@@ -32,6 +34,7 @@ interface ClientDetailTabsProps {
   appIds: OAuthClientAppId[];
   roles: OAuthClientRole[];
   defaultRoleId: string | null;
+  signedInUsers: SignedInUser[];
   endpoints: {
     issuer: string;
     authorizationEndpoint: string;
@@ -42,13 +45,22 @@ interface ClientDetailTabsProps {
 
 const tabs = [
   { id: "general", label: "General", icon: Settings },
+  { id: "users", label: "Users", icon: Users },
   { id: "permissions", label: "Permissions", icon: Shield },
   { id: "advanced", label: "Advanced", icon: AlertTriangle },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
 
-export function ClientDetailTabs({ client, whitelistEmails, appIds, roles, defaultRoleId, endpoints }: ClientDetailTabsProps) {
+export function ClientDetailTabs({
+  client,
+  whitelistEmails,
+  appIds,
+  roles,
+  defaultRoleId,
+  signedInUsers,
+  endpoints,
+}: ClientDetailTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("general");
 
   return (
@@ -139,6 +151,22 @@ export function ClientDetailTabs({ client, whitelistEmails, appIds, roles, defau
             initialDefaultRoleId={defaultRoleId}
           />
         </div>
+      )}
+
+      {activeTab === "users" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Signed-in users</CardTitle>
+            <CardDescription>
+              {signedInUsers.length}{" "}
+              {signedInUsers.length === 1 ? "user has" : "users have"} signed
+              in to this application
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SignedInUserList users={signedInUsers} />
+          </CardContent>
+        </Card>
       )}
 
       {activeTab === "advanced" && (
