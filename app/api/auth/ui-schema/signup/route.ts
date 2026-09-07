@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { oauthClients } from "@/lib/db/schema";
 import { getSignUpStatus } from "@/lib/settings/sign-up";
 import { buildSignupSchema, type OAuthClientLite } from "@/lib/ui-schema/build";
+import { getEnabledSocialProviders } from "@/lib/auth/social/providers";
 
 // GET /api/auth/ui-schema/signup?client_id=<id>
 //
@@ -13,7 +14,8 @@ import { buildSignupSchema, type OAuthClientLite } from "@/lib/ui-schema/build";
 // methods list is empty so the client can render its own "sign-up closed" UI
 // without hard-coding the rule.
 export async function GET(request: NextRequest) {
-  const clientId = new URL(request.url).searchParams.get("client_id");
+  const requestUrl = new URL(request.url);
+  const clientId = requestUrl.searchParams.get("client_id");
 
   let client: OAuthClientLite | null = null;
   if (clientId) {
@@ -47,6 +49,16 @@ export async function GET(request: NextRequest) {
     process.env.UI_SCHEMA_PASSKEY_ACCOUNT_CREATION !== "false";
 
   return NextResponse.json(
-    buildSignupSchema({ client, signUpAllowed, accountCreationEnabled }),
+    buildSignupSchema({
+      client,
+      signUpAllowed,
+      accountCreationEnabled,
+      identityProviders: getEnabledSocialProviders().map((provider) => ({
+        id: provider.id,
+        label: provider.label,
+        iconUrl: new URL(provider.iconPath, requestUrl.origin).toString(),
+        darkIconUrl: new URL(provider.darkIconPath, requestUrl.origin).toString(),
+      })),
+    }),
   );
 }

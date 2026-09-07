@@ -18,6 +18,11 @@ const FIRST_PARTY_CLIENT = {
 
 const findClient = mock();
 const getSignUpStatusMock = mock();
+const getEnabledSocialProvidersMock = mock();
+
+mock.module("@/lib/auth/social/providers", () => ({
+  getEnabledSocialProviders: getEnabledSocialProvidersMock,
+}));
 
 mock.module("@/lib/db", () => ({
   db: {
@@ -41,6 +46,21 @@ function makeRequest(search: string = ""): Request {
 describe("GET /api/auth/ui-schema/signup", () => {
   beforeEach(() => {
     findClient.mockReset();
+    getEnabledSocialProvidersMock.mockReset();
+    getEnabledSocialProvidersMock.mockReturnValue([
+      {
+        id: "google",
+        label: "Continue with Google",
+        iconPath: "/brand/google-g.svg",
+        darkIconPath: "/brand/google-g.svg",
+      },
+      {
+        id: "github",
+        label: "Continue with GitHub",
+        iconPath: "/brand/github-invertocat-black.svg",
+        darkIconPath: "/brand/github-invertocat-white.svg",
+      },
+    ]);
     getSignUpStatusMock.mockReset();
     getSignUpStatusMock.mockResolvedValue({
       publicSignUpEnabled: true,
@@ -60,6 +80,22 @@ describe("GET /api/auth/ui-schema/signup", () => {
     expect(body.flow).toBe("signup");
     expect(body.title).toBe("Create your macOS Test App account");
     expect(body.submitLabel).toBe("Create account");
+    expect(body.identityProviders).toEqual([
+      {
+        id: "google",
+        label: "Continue with Google",
+        iconUrl: "https://auth.rxlab.app/brand/google-g.svg",
+        darkIconUrl: "https://auth.rxlab.app/brand/google-g.svg",
+        authorizationParameters: { identity_provider: "google" },
+      },
+      {
+        id: "github",
+        label: "Continue with GitHub",
+        iconUrl: "https://auth.rxlab.app/brand/github-invertocat-black.svg",
+        darkIconUrl: "https://auth.rxlab.app/brand/github-invertocat-white.svg",
+        authorizationParameters: { identity_provider: "github" },
+      },
+    ]);
 
     const methodIds = body.supportedMethods.map((m: { id: string }) => m.id);
     expect(methodIds).toEqual(["password", "passkey_account_creation"]);
@@ -91,6 +127,7 @@ describe("GET /api/auth/ui-schema/signup", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.supportedMethods).toEqual([]);
+    expect(body.identityProviders).toEqual([]);
     // Fields still present so client can render the form layout for an
     // "invite-only / disabled" empty state.
     const fieldKeys = body.fields.map((f: { key: string }) => f.key);
@@ -119,6 +156,25 @@ describe("GET /api/auth/ui-schema/signup", () => {
     expect(body.error).toBe("invalid_client");
   });
 
+  test("no configured social providers returns an empty list", async () => {
+    findClient.mockResolvedValue(FIRST_PARTY_CLIENT);
+    getEnabledSocialProvidersMock.mockReturnValue([]);
+    const res = await GET(makeRequest(`client_id=${FIRST_PARTY_CLIENT.id}`) as never);
+    expect((await res.json()).identityProviders).toEqual([]);
+  });
+
+  test.each(["none", "whitelist"])("%s client hides social providers", async (signInPermission) => {
+    findClient.mockResolvedValue({ ...FIRST_PARTY_CLIENT, signInPermission });
+    const res = await GET(makeRequest(`client_id=${FIRST_PARTY_CLIENT.id}`) as never);
+    expect((await res.json()).identityProviders).toEqual([]);
+  });
+
+  test("missing client hides social providers", async () => {
+    const res = await GET(makeRequest() as never);
+    expect((await res.json()).identityProviders).toEqual([]);
+    expect(findClient).not.toHaveBeenCalled();
+  });
+
   test("response shape is stable", async () => {
     findClient.mockResolvedValue(FIRST_PARTY_CLIENT);
     const res = await GET(makeRequest(`client_id=${FIRST_PARTY_CLIENT.id}`) as never);
@@ -126,6 +182,7 @@ describe("GET /api/auth/ui-schema/signup", () => {
     expect(Object.keys(body).sort()).toEqual([
       "fields",
       "flow",
+      "identityProviders",
       "links",
       "submitLabel",
       "supportedMethods",

@@ -188,6 +188,7 @@ export function buildSigninSchema(input: BuildSigninInput): UiSchema {
 export interface BuildSignupInput {
   client: OAuthClientLite | null;
   signUpAllowed: boolean;
+  identityProviders?: BuildSigninInput["identityProviders"];
   // Feature flag for the iOS 26 / macOS 26
   // ASAuthorizationAccountCreationProvider system-sheet flow. When true and
   // sign-up is otherwise allowed, the schema advertises the
@@ -198,7 +199,12 @@ export interface BuildSignupInput {
 }
 
 export function buildSignupSchema(input: BuildSignupInput): UiSchema {
-  const { client, signUpAllowed, accountCreationEnabled = false } = input;
+  const {
+    client,
+    signUpAllowed,
+    accountCreationEnabled = false,
+    identityProviders = [],
+  } = input;
   const firstParty = client?.signInPermission === "all";
 
   const methods: UiMethod[] = [];
@@ -244,5 +250,11 @@ export function buildSignupSchema(input: BuildSignupInput): UiSchema {
     links: [
       { id: "switch-to-signin", label: "Already have an account?", href: "/login" },
     ],
+    identityProviders: firstParty && signUpAllowed
+      ? identityProviders.map((provider) => ({
+          ...provider,
+          authorizationParameters: { identity_provider: provider.id },
+        }))
+      : [],
   };
 }
