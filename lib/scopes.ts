@@ -128,6 +128,24 @@ export function grantsEmailScope(scopes: string[]): boolean {
   return scopes.includes("read:email") || scopes.includes("email");
 }
 
+/**
+ * Whether a granted-scope list authorizes scheduling or cancelling deletion of
+ * the token holder's own account.
+ *
+ * There is no dedicated "destroy this account" scope yet. `write:account` is the
+ * right long-term answer, but every shipped native client requests
+ * `openid read:profile read:email` and would start failing with
+ * `insufficient_scope` the day it landed — so `write:profile`, the strongest
+ * scope that exists today, is accepted too. Scheduling is delayed, revertible
+ * and advertised on every user-info surface, which bounds what a mis-scoped
+ * token can actually do.
+ *
+ * Follow-up: once clients request `write:account`, drop the `write:profile` arm.
+ */
+export function grantsAccountDeletionScope(scopes: string[]): boolean {
+  return scopes.includes("write:account") || scopes.includes("write:profile");
+}
+
 export function getScope(key: string): Scope | undefined {
   return SCOPES.find((s) => s.key === key);
 }

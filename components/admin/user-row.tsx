@@ -8,6 +8,7 @@ import {
   Mail,
   KeyRound,
   Trash2,
+  CalendarClock,
   MoreHorizontal,
   CheckCircle,
   XCircle,
@@ -23,6 +24,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deleteUser } from "@/actions/admin/users/delete";
+import {
+  cancelUserDeletion,
+  scheduleUserDeletion,
+} from "@/actions/admin/users/deletion-schedule";
 import { adminResendVerificationEmail } from "@/actions/admin/users/resend-verification";
 import { adminSendPasswordReset } from "@/actions/admin/users/send-password-reset";
 import { toggleUserVerified } from "@/actions/admin/users/toggle-verified";
@@ -45,6 +50,9 @@ export function UserRow({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(user.emailVerified);
+  const [scheduledAt, setScheduledAt] = useState<string | null>(
+    user.deletionScheduledAt ? new Date(user.deletionScheduledAt).toISOString() : null
+  );
 
   const handleResendVerification = () => {
     if (
@@ -90,8 +98,50 @@ export function UserRow({
     });
   };
 
+  const handleScheduleDeletion = () => {
+    if (
+      !confirm(
+        `Schedule "${user.email}" for deletion?\n\nThe account stays usable during the grace period and the deletion can be cancelled until it elapses.`
+      )
+    )
+      return;
+
+    setError(null);
+
+    startTransition(async () => {
+      const result = await scheduleUserDeletion(user.id);
+      if (result.success) {
+        setScheduledAt(result.deletionScheduledAt ?? null);
+        setSuccess("Deletion scheduled");
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(result.error || "Failed to schedule deletion");
+      }
+    });
+  };
+
+  const handleCancelDeletion = () => {
+    setError(null);
+
+    startTransition(async () => {
+      const result = await cancelUserDeletion(user.id);
+      if (result.success) {
+        setScheduledAt(null);
+        setSuccess("Deletion cancelled");
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(result.error || "Failed to cancel deletion");
+      }
+    });
+  };
+
   const handleDelete = () => {
-    if (!confirm(`Delete user "${user.email}"? This cannot be undone.`)) return;
+    if (
+      !confirm(
+        `Delete user "${user.email}" immediately?\n\nThis skips the grace period and cannot be undone.`
+      )
+    )
+      return;
 
     setError(null);
 
@@ -235,18 +285,46 @@ export function UserRow({
                 )}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              {scheduledAt ? (
+                <DropdownMenuItem
+                  onClick={handleCancelDeletion}
+                  data-testid={`cancel-deletion-${user.id}`}
+                >
+                  <CalendarClock className="h-4 w-4 mr-2" />
+                  Cancel Scheduled Deletion
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  onClick={handleScheduleDeletion}
+                  data-testid={`schedule-deletion-${user.id}`}
+                >
+                  <CalendarClock className="h-4 w-4 mr-2" />
+                  Schedule Deletion
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onClick={handleDelete}
                 variant="destructive"
                 data-testid={`delete-user-${user.id}`}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete User
+                Delete Immediately
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         <div className="flex items-center gap-3">
+          {scheduledAt && (
+            <Badge
+              variant="destructive"
+              className="gap-1"
+              data-testid={`pending-deletion-${user.id}`}
+              title={`Scheduled for deletion on ${new Date(scheduledAt).toLocaleString()}`}
+            >
+              <CalendarClock className="h-3 w-3" />
+              Deleting
+            </Badge>
+          )}
           {isVerified ? (
             <Badge variant="default" className="gap-1">
               <CheckCircle className="h-3 w-3" />

@@ -5,6 +5,7 @@ import { oauthClients } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
 import { hashPassword } from "@/lib/auth/password";
 import { updateOAuthClientSchema, type UpdateOAuthClientInput } from "@/lib/validations/admin";
+import { serializeSignInMethods } from "@/lib/auth/sign-in-methods";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -29,7 +30,7 @@ export async function updateOAuthClient(
       };
     }
 
-    const { name, description, redirectUris, allowedScopes, isFirstParty, signInPermission } = parsed.data;
+    const { name, description, redirectUris, allowedScopes, isFirstParty, signInPermission, signInMethods } = parsed.data;
 
     const updateData: Partial<typeof oauthClients.$inferInsert> = {
       updatedAt: new Date(),
@@ -44,6 +45,8 @@ export async function updateOAuthClient(
     if (isFirstParty !== undefined) updateData.isFirstParty = isFirstParty;
     if (signInPermission !== undefined)
       updateData.signInPermission = signInPermission;
+    if (signInMethods !== undefined)
+      updateData.signInMethods = serializeSignInMethods(signInMethods);
 
     await db
       .update(oauthClients)

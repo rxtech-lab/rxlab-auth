@@ -17,6 +17,8 @@ export const REDIS_KEYS = {
   EMAIL_VERIFICATION: (token: string) => `email:verify:${token}`,
   // Password reset (for quick lookup)
   PASSWORD_RESET: (token: string) => `password:reset:${token}`,
+  // Sign in with Apple: single-use nonce for the native (ASAuthorization) flow
+  APPLE_NONCE: (sessionId: string) => `apple:nonce:${sessionId}`,
 } as const;
 
 // Default TTLs in seconds
@@ -26,6 +28,7 @@ export const TTL = {
   EMAIL_VERIFICATION: 24 * 60 * 60, // 24 hours
   PASSWORD_RESET: 60 * 60, // 1 hour
   RATE_LIMIT_WINDOW: 15 * 60, // 15 minutes
+  APPLE_NONCE: 5 * 60, // 5 minutes
 } as const;
 
 // OAuth authorization code data
@@ -104,6 +107,41 @@ export async function getWebAuthnChallenge(
 
 export async function deleteWebAuthnChallenge(sessionId: string): Promise<void> {
   await redis.del(REDIS_KEYS.WEBAUTHN_CHALLENGE(sessionId));
+}
+
+// Sign in with Apple native nonce.
+//
+// The identity token an iOS/macOS app gets from ASAuthorizationAppleIDProvider
+// is audience-bound to the app's bundle ID, but nothing in the token alone
+// stops it being replayed within its 10-minute validity window. Handing out a
+// server-generated nonce first — and deleting it on use — makes each token
+// single-use, the same shape as the WebAuthn challenge flow above.
+export interface AppleNonceData {
+  nonce: string;
+  clientId: string;
+  redirectUri: string;
+  createdAt: number;
+}
+
+export async function storeAppleNonce(
+  sessionId: string,
+  data: AppleNonceData
+): Promise<void> {
+  await redis.set(REDIS_KEYS.APPLE_NONCE(sessionId), JSON.stringify(data), {
+    ex: TTL.APPLE_NONCE,
+  });
+}
+
+export async function getAppleNonce(
+  sessionId: string
+): Promise<AppleNonceData | null> {
+  const data = await redis.get<string>(REDIS_KEYS.APPLE_NONCE(sessionId));
+  if (!data) return null;
+  return typeof data === "string" ? JSON.parse(data) : data;
+}
+
+export async function deleteAppleNonce(sessionId: string): Promise<void> {
+  await redis.del(REDIS_KEYS.APPLE_NONCE(sessionId));
 }
 
 // Rate limiting helper

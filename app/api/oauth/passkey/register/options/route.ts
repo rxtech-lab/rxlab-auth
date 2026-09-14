@@ -9,7 +9,10 @@ import {
 } from "@/lib/redis";
 import { getRegistrationOptions } from "@/lib/webauthn/config";
 import { passkeyRegisterOptionsRequestSchema } from "@/lib/validations/oauth";
-import { validateClientRedirect } from "@/lib/oauth/native-client";
+import {
+  requireSignInMethod,
+  validateClientRedirect,
+} from "@/lib/oauth/native-client";
 import { checkSignUpAllowed } from "@/lib/settings/sign-up";
 
 // POST /api/oauth/passkey/register/options
@@ -46,6 +49,9 @@ export async function POST(request: NextRequest) {
     redirectUri: data.redirect_uri,
   });
   if (!clientCheck.ok) return clientCheck.response;
+
+  const passkeyDisabled = requireSignInMethod(clientCheck.client, "passkey");
+  if (passkeyDisabled) return passkeyDisabled;
 
   const email = data.username.toLowerCase();
 

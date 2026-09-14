@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Loader2, ChevronDown, Plus, UserPlus } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,100 +13,82 @@ import {
 import { UserRow } from "@/components/admin/user-row";
 import { UserSearch } from "@/components/admin/user-search";
 import { UserSheet } from "@/components/admin/user-sheet";
-import { getUsers } from "@/actions/admin/users/list";
+import { PaginationControls } from "@/components/admin/pagination-controls";
 import { useDebounce } from "@/hooks/use-debounce";
+import { buildQueryString, type Pagination } from "@/lib/admin/pagination";
 import type { User } from "@/lib/db/schema";
 import type { UserRoleOptionApp } from "@/components/admin/user-role-assignments";
 
 interface UserListProps {
-  initialUsers: User[];
-  initialCursor: string | null;
-  totalCount: number;
+  /** The current page of rows, already filtered and paged by the server. */
+  users: User[];
+  pagination: Pagination;
+  /** The active `?q=` value, so the input can be seeded from the URL. */
+  search: string;
   roleOptions: UserRoleOptionApp[];
 }
 
+/**
+ * The admin user table.
+ *
+ * Paging and search are URL state, not component state: the server page reads
+ * `?page=` and `?q=`, queries, and hands the rows down. That means a refresh or
+ * a shared link reopens the same page of the same search, and there is no
+ * second copy of the list to drift out of sync — mutations just ask the server
+ * for fresh data.
+ */
 export function UserList({
-  initialUsers,
-  initialCursor,
-  totalCount: initialTotalCount,
+  users,
+  pagination,
+  search,
   roleOptions,
 }: UserListProps) {
-  const [users, setUsers] = useState(initialUsers);
-  const [cursor, setCursor] = useState(initialCursor);
-  const [totalCount, setTotalCount] = useState(initialTotalCount);
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState("");
+  // The input stays local so typing is instant; the URL catches up on a debounce.
+  const [searchQuery, setSearchQuery] = useState(search);
   const debouncedSearch = useDebounce(searchQuery, 300);
-  const [isSearchPending, startSearchTransition] = useTransition();
-  const prevDebouncedSearch = useRef(debouncedSearch);
+  const [isNavigating, startNavigation] = useTransition();
 
-  // Sheet state for create/edit
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<"create" | "edit">("create");
   const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
 
-  // Effect to trigger search when debounced value changes
+  // Re-seed the box when the URL changes underneath us — back/forward buttons,
+  // or the redirect that clamps an out-of-range page. This is React's
+  // adjust-state-during-render pattern rather than an effect: it re-renders
+  // before paint instead of committing a throwaway frame.
+  const [urlSearch, setUrlSearch] = useState(search);
+  if (urlSearch !== search) {
+    setUrlSearch(search);
+    setSearchQuery(search);
+  }
+
+  // Push the debounced query into the URL once it diverges from what the URL
+  // already says. Comparing against `search` rather than tracking the last push
+  // makes this self-terminating: the navigation updates `search`, and the next
+  // run finds them equal. A filter change drops `page`, since the old page
+  // number means nothing against a new result set.
   useEffect(() => {
-    // Skip if the value hasn't changed
-    if (prevDebouncedSearch.current === debouncedSearch) {
-      return;
-    }
-    prevDebouncedSearch.current = debouncedSearch;
+    if (debouncedSearch === search) return;
 
-    if (debouncedSearch) {
-      startSearchTransition(async () => {
-        const result = await getUsers({ search: debouncedSearch });
-        if (result.success && result.data) {
-          setUsers(result.data.users);
-          setCursor(result.data.nextCursor);
-          setTotalCount(result.data.totalCount);
-        } else {
-          setError(result.error || "Failed to search users");
-        }
-      });
-    } else {
-      // Reset to initial state when search is cleared
-      startSearchTransition(() => {
-        setUsers(initialUsers);
-        setCursor(initialCursor);
-        setTotalCount(initialTotalCount);
-      });
-    }
-  }, [debouncedSearch, initialUsers, initialCursor, initialTotalCount]);
-
-  const loadMore = () => {
-    if (!cursor) return;
-    setError(null);
-
-    startTransition(async () => {
-      const result = await getUsers({
-        cursor,
-        search: debouncedSearch || undefined,
-      });
-      if (result.success && result.data) {
-        setUsers([...users, ...result.data.users]);
-        setCursor(result.data.nextCursor);
-      } else {
-        setError(result.error || "Failed to load more users");
-      }
+    startNavigation(() => {
+      router.replace(
+        `/admin/dashboard/users${buildQueryString({ q: debouncedSearch })}`,
+        { scroll: false },
+      );
     });
-  };
+  }, [debouncedSearch, search, router]);
 
-  const handleUserDeleted = (userId: string) => {
-    setUsers(users.filter((u) => u.id !== userId));
-    setTotalCount((prev) => prev - 1);
-  };
+  const hrefForPage = (page: number) =>
+    `/admin/dashboard/users${buildQueryString({
+      page: page === 1 ? undefined : page,
+      q: search,
+    })}`;
 
-  const handleVerificationChanged = (userId: string, verified: boolean) => {
-    setUsers(
-      users.map((u) =>
-        u.id === userId ? { ...u, emailVerified: verified } : u,
-      ),
-    );
-  };
+  // The rows are server-owned, so a mutation refetches rather than patching a
+  // local copy — no divergence between what the table shows and what exists.
+  const refresh = () => router.refresh();
 
   const handleCreateUser = () => {
     setSheetMode("create");
@@ -120,26 +102,6 @@ export function UserList({
     setSheetOpen(true);
   };
 
-  const handleUserCreated = () => {
-    // Refresh the user list
-    startTransition(async () => {
-      const result = await getUsers({
-        search: debouncedSearch || undefined,
-      });
-      if (result.success && result.data) {
-        setUsers(result.data.users);
-        setCursor(result.data.nextCursor);
-        setTotalCount(result.data.totalCount);
-      }
-    });
-  };
-
-  const handleUserUpdated = (updatedUser?: User) => {
-    if (updatedUser) {
-      setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
-    }
-  };
-
   return (
     <div className="space-y-4" data-testid="user-list">
       {/* Action bar */}
@@ -147,7 +109,7 @@ export function UserList({
         <UserSearch
           value={searchQuery}
           onChange={setSearchQuery}
-          isSearching={isSearchPending}
+          isSearching={isNavigating || searchQuery !== debouncedSearch}
         />
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -171,20 +133,10 @@ export function UserList({
         </DropdownMenu>
       </div>
 
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3"
-        >
-          {error}
-        </motion.div>
-      )}
-
       {users.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <p>
-            {searchQuery
+            {search
               ? "No users found matching your search."
               : "No users registered yet."}
           </p>
@@ -207,36 +159,19 @@ export function UserList({
                 <UserRow
                   key={user.id}
                   user={user}
-                  onDeleted={() => handleUserDeleted(user.id)}
-                  onVerificationChanged={handleVerificationChanged}
+                  onDeleted={refresh}
+                  onVerificationChanged={refresh}
                   onEdit={() => handleEditUser(user)}
                 />
               ))}
             </div>
           </div>
 
-          {/* Load more button */}
-          {cursor && (
-            <div className="flex justify-center pt-4">
-              <Button
-                variant="outline"
-                onClick={loadMore}
-                disabled={isPending}
-                data-testid="load-more-users"
-              >
-                {isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 mr-2" />
-                )}
-                Load More
-              </Button>
-            </div>
-          )}
-
-          <div className="text-center text-sm text-muted-foreground">
-            Showing {users.length} of {totalCount} users
-          </div>
+          <PaginationControls
+            pagination={pagination}
+            hrefForPage={hrefForPage}
+            itemLabel="user"
+          />
         </>
       )}
 
@@ -247,9 +182,7 @@ export function UserList({
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         roleOptions={roleOptions}
-        onSuccess={
-          sheetMode === "create" ? handleUserCreated : handleUserUpdated
-        }
+        onSuccess={refresh}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import {
   isSupportedAdminApiPermission,
   READ_USERS_PERMISSION,
 } from "@/lib/admin-api/permissions";
+import { SOCIAL_PROVIDER_IDS } from "@/lib/auth/social/providers";
 
 const redirectUriSchema = z
   .string()
@@ -35,6 +36,12 @@ export const adminLoginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const signInMethodsSchema = z.object({
+  password: z.boolean(),
+  passkey: z.boolean(),
+  social: z.record(z.enum(SOCIAL_PROVIDER_IDS), z.boolean()),
+});
+
 export const createOAuthClientSchema = z.object({
   name: z
     .string()
@@ -53,6 +60,7 @@ export const createOAuthClientSchema = z.object({
   isFirstParty: z.boolean().optional().default(false),
   clientType: z.enum(["public", "confidential"]).default("confidential"),
   signInPermission: z.enum(["all", "none", "whitelist"]).default("all"),
+  signInMethods: signInMethodsSchema.optional(),
 });
 
 export const updateOAuthClientSchema = z.object({
@@ -76,6 +84,7 @@ export const updateOAuthClientSchema = z.object({
     .optional(),
   isFirstParty: z.boolean().optional(),
   signInPermission: z.enum(["all", "none", "whitelist"]).optional(),
+  signInMethods: signInMethodsSchema.optional(),
 });
 
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;

@@ -104,6 +104,10 @@ export default defineConfig({
       env: {
         // Testing flags (both server and client side)
         E2E_SKIP_EMAIL_VERIFICATION: "true",
+        // Seconds, not the 7-day production default, so the delayed-deletion
+        // specs can watch a scheduled deletion actually fire.
+        ACCOUNT_DELETION_DELAY_SECONDS: "3",
+        CRON_SECRET: "e2e-cron-secret",
         NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION: "true",
         NEXT_DIST_DIR: e2eDistDir,
 

@@ -113,6 +113,10 @@ export async function completeSocialSignin(input: {
   profile: SocialProfile;
   redirectTo: string;
   userId?: string;
+  // Native clients know the OAuth client directly instead of inferring it from
+  // a pending /api/oauth/authorize redirect, so they pass it through here to
+  // get the same default-role assignment on account creation.
+  oauthClientId?: string;
 }): Promise<SocialSigninUser> {
   const { profile } = input;
   const currentIntent = await getSocialSigninIntent(profile);
@@ -145,7 +149,8 @@ export async function completeSocialSignin(input: {
 
   const userId = existingUser?.id || crypto.randomUUID();
   const now = new Date();
-  const oauthClientId = getOAuthClientIdFromRedirect(input.redirectTo);
+  const oauthClientId =
+    input.oauthClientId ?? getOAuthClientIdFromRedirect(input.redirectTo);
   const oauthClient = oauthClientId
     ? await db.query.oauthClients.findFirst({
         where: eq(oauthClients.id, oauthClientId),

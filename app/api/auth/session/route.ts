@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
+import {
+  DELETION_STATE_COLUMNS,
+  buildAccountDeletionStatus,
+} from "@/lib/account/deletion-status";
 import { eq } from "drizzle-orm";
 
 export async function GET() {
@@ -21,6 +25,7 @@ export async function GET() {
         displayName: true,
         avatarSeed: true,
         emailVerified: true,
+        ...DELETION_STATE_COLUMNS,
       },
     });
 
@@ -28,7 +33,16 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
-    return NextResponse.json({ user });
+    // Replace the raw Date columns with the serialized deletion status so
+    // clients see one documented shape rather than two representations.
+    const { deletionScheduledAt, deletionRequestedAt, ...profile } = user;
+
+    return NextResponse.json({
+      user: {
+        ...profile,
+        ...buildAccountDeletionStatus({ deletionScheduledAt, deletionRequestedAt }),
+      },
+    });
   } catch (error) {
     console.error("Session error:", error);
     return NextResponse.json({ user: null });

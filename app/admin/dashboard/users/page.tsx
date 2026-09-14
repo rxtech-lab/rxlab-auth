@@ -1,9 +1,15 @@
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { oauthClients, oauthClientRoles, users } from "@/lib/db/schema";
-import { asc, desc, sql } from "drizzle-orm";
+import { asc, desc, like, or, sql } from "drizzle-orm";
 import { PageHeader } from "@/components/dashboard";
 import { UserList } from "@/components/admin/user-list";
 import type { UserRoleOptionApp } from "@/components/admin/user-role-assignments";
+import {
+  buildQueryString,
+  parsePageParam,
+  resolvePagination,
+} from "@/lib/admin/pagination";
 
 export const metadata = {
   title: "Users - Admin",
@@ -12,30 +18,53 @@ export const metadata = {
 
 const PAGE_SIZE = 20;
 
-function encodeCursor(createdAt: Date, id: string): string {
-  return Buffer.from(
-    JSON.stringify({ createdAt: createdAt.getTime(), id })
-  ).toString("base64");
-}
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
+  const params = await searchParams;
+  const search = params.q?.trim() ?? "";
+  const requestedPage = parsePageParam(params.page);
 
-export default async function UsersPage() {
-  // Fetch total count
+  // Both the page and the query live in the URL, so a refresh, a bookmark, or
+  // the back button restore the same view — and a colleague can be sent a link
+  // to a specific search result.
+  const searchCondition = search
+    ? or(
+        like(users.email, `%${search}%`),
+        like(users.username, `%${search}%`),
+        like(users.displayName, `%${search}%`),
+      )
+    : undefined;
+
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
-    .from(users);
+    .from(users)
+    .where(searchCondition);
 
-  // Fetch first page
-  const userList = await db.query.users.findMany({
-    orderBy: [desc(users.createdAt), desc(users.id)],
-    limit: PAGE_SIZE + 1,
+  const pagination = resolvePagination({
+    totalCount: count,
+    requestedPage,
+    pageSize: PAGE_SIZE,
   });
 
-  const hasMore = userList.length > PAGE_SIZE;
-  const displayUsers = hasMore ? userList.slice(0, PAGE_SIZE) : userList;
+  const hrefForPage = (page: number) =>
+    `/admin/dashboard/users${buildQueryString({ page: page === 1 ? undefined : page, q: search })}`;
 
-  const lastUser = displayUsers[displayUsers.length - 1];
-  const nextCursor =
-    hasMore && lastUser ? encodeCursor(lastUser.createdAt, lastUser.id) : null;
+  // Narrowing a search can leave you on a page that no longer exists; land on
+  // the last real one rather than an empty list at a bookmarkable URL.
+  if (pagination.wasClamped) {
+    redirect(hrefForPage(pagination.page));
+  }
+
+  const userList = await db
+    .select()
+    .from(users)
+    .where(searchCondition)
+    .orderBy(desc(users.createdAt), desc(users.id))
+    .limit(pagination.pageSize)
+    .offset(pagination.offset);
 
   const clients = await db
     .select({
@@ -72,17 +101,23 @@ export default async function UsersPage() {
     roles: rolesByClient.get(client.id) ?? [],
   }));
 
+  // The count in the header is the unfiltered total; the filtered count belongs
+  // with the rows it describes.
+  const [{ count: totalUsers }] = search
+    ? await db.select({ count: sql<number>`count(*)` }).from(users)
+    : [{ count }];
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Users"
-        description={`${count} registered ${count === 1 ? "user" : "users"}`}
+        description={`${totalUsers} registered ${totalUsers === 1 ? "user" : "users"}`}
       />
 
       <UserList
-        initialUsers={displayUsers}
-        initialCursor={nextCursor}
-        totalCount={count}
+        users={userList}
+        pagination={pagination}
+        search={search}
         roleOptions={roleOptions}
       />
     </div>

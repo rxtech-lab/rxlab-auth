@@ -17,16 +17,26 @@ interface SocialAccountCardProps {
   canDisconnect: boolean;
 }
 
+// `hasDarkVariant` marks the monochrome marks (GitHub, Apple) that need a
+// light/dark swap. Google's is full-colour and renders the same in both.
 const PROVIDERS = {
   github: {
     name: "GitHub",
     iconPath: "/brand/github-invertocat-black.svg",
     darkIconPath: "/brand/github-invertocat-white.svg",
+    hasDarkVariant: true,
   },
   google: {
     name: "Google",
     iconPath: "/brand/google-g.svg",
     darkIconPath: "/brand/google-g.svg",
+    hasDarkVariant: false,
+  },
+  apple: {
+    name: "Apple",
+    iconPath: "/brand/apple-logo-black.svg",
+    darkIconPath: "/brand/apple-logo-white.svg",
+    hasDarkVariant: true,
   },
 } as const;
 
@@ -76,12 +86,10 @@ export function SocialAccountCard({
               width={24}
               height={24}
               className={
-                account.provider === "github"
-                  ? "size-6 dark:hidden"
-                  : "size-6"
+                provider.hasDarkVariant ? "size-6 dark:hidden" : "size-6"
               }
             />
-            {account.provider === "github" && (
+            {provider.hasDarkVariant && (
               <Image
                 src={provider.darkIconPath}
                 alt=""

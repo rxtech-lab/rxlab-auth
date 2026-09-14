@@ -1,4 +1,5 @@
 import { describe, expect, test, mock, beforeEach } from "bun:test";
+import { drizzleOrmMock } from "@/lib/db/drizzle-mock";
 
 // Mock user data
 const mockExistingUser = {
@@ -31,11 +32,7 @@ const mockDb = {
 };
 
 // Mock drizzle-orm functions
-mock.module("drizzle-orm", () => ({
-  eq: (field: unknown, value: unknown) => ({ field, value }),
-  and: (...conditions: unknown[]) => ({ conditions }),
-  not: (condition: unknown) => ({ not: condition }),
-}));
+mock.module("drizzle-orm", () => drizzleOrmMock);
 
 // Mock the db module
 mock.module("@/lib/db", () => ({

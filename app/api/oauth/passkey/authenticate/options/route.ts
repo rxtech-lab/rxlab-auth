@@ -12,7 +12,10 @@ import {
   parseTransports,
 } from "@/lib/webauthn/config";
 import { passkeyAuthOptionsRequestSchema } from "@/lib/validations/oauth";
-import { validateClientRedirect } from "@/lib/oauth/native-client";
+import {
+  requireSignInMethod,
+  validateClientRedirect,
+} from "@/lib/oauth/native-client";
 
 // POST /api/oauth/passkey/authenticate/options
 //
@@ -46,6 +49,9 @@ export async function POST(request: NextRequest) {
     redirectUri: parsed.data.redirect_uri,
   });
   if (!check.ok) return check.response;
+
+  const passkeyDisabled = requireSignInMethod(check.client, "passkey");
+  if (passkeyDisabled) return passkeyDisabled;
 
   const sessionId = crypto.randomUUID();
 

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { oauthClients } from "@/lib/db/schema";
 import { buildSigninSchema, type OAuthClientLite } from "@/lib/ui-schema/build";
 import { getEnabledSocialProviders } from "@/lib/auth/social/providers";
+import { parseSignInMethods } from "@/lib/auth/sign-in-methods";
 
 // GET /api/auth/ui-schema/signin?client_id=<id>
 //
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
       id: row.id,
       name: row.name,
       signInPermission: row.signInPermission,
+      signInMethods: parseSignInMethods(row.signInMethods),
     };
   }
 

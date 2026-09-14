@@ -75,6 +75,14 @@ GITHUB_OAUTH_CLIENT_ID=your_github_oauth_client_id
 GITHUB_OAUTH_CLIENT_SECRET=your_github_oauth_client_secret
 GOOGLE_OAUTH_CLIENT_ID=your_google_oauth_client_id
 GOOGLE_OAUTH_CLIENT_SECRET=your_google_oauth_client_secret
+# Sign in with Apple (all four required; the provider stays hidden otherwise)
+APPLE_OAUTH_SERVICES_ID=your_apple_services_id
+APPLE_OAUTH_TEAM_ID=your_apple_team_id
+APPLE_OAUTH_KEY_ID=your_apple_key_id
+# base64 -i AuthKey_<KEYID>.p8 | tr -d '\n'
+APPLE_OAUTH_PRIVATE_KEY=LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t...
+# Bundle IDs allowed for native Sign in with Apple (comma-separated)
+APPLE_OAUTH_BUNDLE_IDS=com.rxlab.app
 
 # WebAuthn
 WEBAUTHN_ORIGIN=http://localhost:3000
@@ -92,7 +100,24 @@ Register these provider callback URLs, using the same origin as
 ```text
 https://your-auth-host/api/auth/social/github/callback
 https://your-auth-host/api/auth/social/google/callback
+https://your-auth-host/api/auth/social/apple/callback
 ```
+
+Apple differs from the other two in three ways worth knowing up front:
+
+- There is no static client secret. The server mints a short-lived ES256 JWT
+  from your `.p8` signing key on every token exchange, so the Team ID, Key ID,
+  Services ID and private key are all required together. Supply the key
+  base64-encoded (`base64 -i AuthKey_<KEYID>.p8 | tr -d '\n'`) — a single opaque
+  line survives every shell and dashboard intact. A raw PEM, or one flattened
+  with literal `\n` escapes, is accepted too.
+- The callback is a cross-site `POST`, not a redirect — asking Apple for the
+  `name`/`email` scopes forces `response_mode=form_post`. The OAuth state cookie
+  is therefore `SameSite=None; Secure` for Apple alone, which means **the
+  browser flow needs HTTPS even locally**; use a tunnel rather than
+  `http://localhost`.
+- Apple releases the user's name exactly once, on the first consent. It is
+  captured then or not at all.
 
 Configured providers appear on the web login form and in
 `GET /api/auth/ui-schema/signin?client_id=<id>` under the additive
@@ -107,6 +132,24 @@ user to approve the connection before linking it. When no account exists, it
 asks for confirmation before creating a social-only account. Signed-in users
 can review and disconnect providers from the Profile page; the final sign-in
 method cannot be removed until another method, such as a passkey, is available.
+
+### Native Sign in with Apple
+
+iOS and macOS clients (RxAuthSwift) use Apple's own system sheet instead of the
+browser flow, via a two-step pair that mirrors the native passkey routes:
+
+```text
+POST /api/oauth/social/apple/nonce   → { session_id, nonce }
+POST /api/oauth/social/apple         → OAuth token JSON
+```
+
+The client hashes the nonce (SHA-256, hex) into
+`ASAuthorizationAppleIDRequest.nonce`; the server verifies the resulting
+identity token against Apple's JWKS, pins the audience to
+`APPLE_OAUTH_BUNDLE_IDS`, re-hashes the nonce to confirm the token belongs to
+this request, and burns it. Because a native app has no `/social/confirm` page
+to show, an Apple-verified email that matches an existing account is linked
+automatically rather than prompting.
 
 ### Installation
 

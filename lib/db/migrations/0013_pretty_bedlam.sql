@@ -1,0 +1,1 @@
+ALTER TABLE `oauth_clients` ADD `sign_in_methods` text;

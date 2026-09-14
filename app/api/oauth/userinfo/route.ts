@@ -4,6 +4,7 @@ import { users } from "@/lib/db/schema";
 import { verifyAccessToken } from "@/lib/oauth/jwt";
 import { getUserRoleKeys } from "@/lib/oauth/roles";
 import { grantsEmailScope } from "@/lib/scopes";
+import { buildOAuthAccountDeletionClaims } from "@/lib/account/deletion-status";
 import { eq } from "drizzle-orm";
 
 async function handleUserInfo(request: NextRequest) {
@@ -55,6 +56,9 @@ async function handleUserInfo(request: NextRequest) {
       preferred_username: user.username,
       picture: user.avatarUrl || `${process.env.OAUTH_ISSUER_URL}/api/avatar/${user.avatarSeed || user.id}`,
       roles,
+      // Unconditional on scope: a client must be able to tell the user their
+      // account is scheduled for deletion regardless of what it was granted.
+      ...buildOAuthAccountDeletionClaims(user),
     };
 
     if (grantsEmailScope(grantedScopes)) {

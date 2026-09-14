@@ -85,6 +85,20 @@
       "when": 1787559397940,
       "tag": "0011_lame_exodus",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1789401315609,
+      "tag": "0012_parallel_hammerhead",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1789403221426,
+      "tag": "0013_pretty_bedlam",
+      "breakpoints": true
     }
   ]
 }
