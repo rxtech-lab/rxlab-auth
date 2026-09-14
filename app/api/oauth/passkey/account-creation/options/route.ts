@@ -6,7 +6,10 @@ import {
 } from "@/lib/redis";
 import { getRegistrationOptions } from "@/lib/webauthn/config";
 import { passkeyAccountCreationOptionsRequestSchema } from "@/lib/validations/oauth";
-import { validateClientRedirect } from "@/lib/oauth/native-client";
+import {
+  requireSignInMethod,
+  validateClientRedirect,
+} from "@/lib/oauth/native-client";
 import { checkSignUpAllowed } from "@/lib/settings/sign-up";
 
 // POST /api/oauth/passkey/account-creation/options
@@ -45,6 +48,9 @@ export async function POST(request: NextRequest) {
     redirectUri: data.redirect_uri,
   });
   if (!clientCheck.ok) return clientCheck.response;
+
+  const passkeyDisabled = requireSignInMethod(clientCheck.client, "passkey");
+  if (passkeyDisabled) return passkeyDisabled;
 
   // Global sign-up gate: respect the same disabled/whitelist controls as
   // the other native signup routes. checkSignUpAllowed only refuses when

@@ -196,6 +196,44 @@ export type PasskeyRegisterVerifyRequest = z.infer<
   typeof passkeyRegisterVerifyRequestSchema
 >;
 
+// POST /api/oauth/social/apple/nonce
+//
+// Native Sign in with Apple, step 1. The client asks for a nonce, hands
+// SHA-256(nonce) to ASAuthorizationAppleIDProvider, and sends the raw value
+// back with the identity token so the server can prove the token was minted
+// for this specific, single-use request.
+export const appleNativeNonceRequestSchema = z.object({
+  client_id: z.string().min(1, "client_id is required"),
+  redirect_uri: z.string().min(1, "redirect_uri is required"),
+});
+
+// POST /api/oauth/social/apple
+//
+// Native Sign in with Apple, step 2: exchange the identity token for our own
+// OAuth tokens. `full_name` is Apple's first-authorization-only payload, which
+// the OS surfaces to the app rather than to us — if it's absent the account
+// keeps whatever display name it already has.
+export const appleNativeSigninRequestSchema = z.object({
+  client_id: z.string().min(1, "client_id is required"),
+  session_id: z.string().min(1, "session_id is required"),
+  nonce: z.string().min(1, "nonce is required"),
+  identity_token: z.string().min(1, "identity_token is required"),
+  full_name: z
+    .object({
+      given_name: z.string().max(64).optional(),
+      family_name: z.string().max(64).optional(),
+    })
+    .optional(),
+  scope: z.string().optional(),
+});
+
+export type AppleNativeNonceRequest = z.infer<
+  typeof appleNativeNonceRequestSchema
+>;
+export type AppleNativeSigninRequest = z.infer<
+  typeof appleNativeSigninRequestSchema
+>;
+
 export const revokeRequestSchema = z.object({
   token: z.string().min(1, "token is required"),
   token_type_hint: z.enum(["access_token", "refresh_token"]).optional(),

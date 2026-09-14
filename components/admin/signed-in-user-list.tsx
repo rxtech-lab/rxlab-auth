@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowUpRight, UserRound } from "lucide-react";
 import type { SignedInUser } from "@/lib/admin/sign-in-history";
 
@@ -33,7 +32,12 @@ export function SignedInUserList({ users }: SignedInUserListProps) {
         >
           <div className="flex min-w-0 items-center gap-3">
             {user.avatarUrl ? (
-              <Image
+              // Plain <img>: a social avatar points at whichever host the
+              // provider uses (googleusercontent, githubusercontent, …), and
+              // next/image rejects any hostname missing from remotePatterns —
+              // which would mean editing next.config every time a provider is
+              // added. Matches the avatar in components/account/profile-form.
+              <img
                 src={user.avatarUrl}
                 alt=""
                 width={40}

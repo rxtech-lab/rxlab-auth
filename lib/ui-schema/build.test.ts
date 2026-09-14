@@ -4,6 +4,7 @@ import {
   buildSignupSchema,
   type OAuthClientLite,
 } from "./build";
+import type { ClientSignInMethods } from "@/lib/auth/sign-in-methods";
 
 const FIRST_PARTY: OAuthClientLite = {
   id: "macos-test-app",
@@ -201,5 +202,115 @@ describe("buildSignupSchema", () => {
     expect(name?.required).toBe(false);
     // displayNameSchema → max 64 chars
     expect(name?.validation.maxLength).toBe(64);
+  });
+});
+
+describe("per-client sign-in methods", () => {
+  const providers = [
+    { id: "github" as const, label: "GitHub", iconUrl: "a", darkIconUrl: "b" },
+    { id: "google" as const, label: "Google", iconUrl: "c", darkIconUrl: "d" },
+  ];
+
+  function client(signInMethods?: ClientSignInMethods): OAuthClientLite {
+    return {
+      id: "c1",
+      name: "Acme",
+      signInPermission: "all",
+      signInMethods,
+    };
+  }
+
+  test("omitting the config leaves every method advertised", () => {
+    const schema = buildSigninSchema({
+      client: client(),
+      identityProviders: providers,
+    });
+
+    expect(schema.supportedMethods.map((m) => m.id)).toEqual([
+      "password",
+      "passkey",
+    ]);
+    expect(schema.identityProviders).toHaveLength(2);
+  });
+
+  test("a disabled password drops the method and promotes passkey", () => {
+    const schema = buildSigninSchema({
+      client: client({
+        password: false,
+        passkey: true,
+        social: { github: true, google: true, apple: true },
+      }),
+      identityProviders: providers,
+    });
+
+    expect(schema.supportedMethods).toEqual([
+      { id: "passkey", label: "Sign in with passkey", primary: true },
+    ]);
+  });
+
+  test("a disabled provider drops out of identityProviders", () => {
+    const schema = buildSigninSchema({
+      client: client({
+        password: true,
+        passkey: true,
+        social: { github: false, google: true, apple: true },
+      }),
+      identityProviders: providers,
+    });
+
+    expect(schema.identityProviders?.map((p) => p.id)).toEqual(["google"]);
+  });
+
+  test("everything disabled yields empty lists", () => {
+    const schema = buildSigninSchema({
+      client: client({
+        password: false,
+        passkey: false,
+        social: { github: false, google: false, apple: false },
+      }),
+      identityProviders: providers,
+    });
+
+    expect(schema.supportedMethods).toEqual([]);
+    expect(schema.identityProviders).toEqual([]);
+  });
+
+  test("signup honours the same config", () => {
+    const schema = buildSignupSchema({
+      client: client({
+        password: false,
+        passkey: true,
+        social: { github: false, google: true, apple: true },
+      }),
+      signUpAllowed: true,
+      accountCreationEnabled: true,
+      identityProviders: providers,
+    });
+
+    expect(schema.supportedMethods).toEqual([
+      { id: "passkey_account_creation", label: "Sign up with Passkey", primary: true },
+    ]);
+    expect(schema.identityProviders?.map((p) => p.id)).toEqual(["google"]);
+  });
+
+  // The per-client list narrows; it can never re-enable a method the client-wide
+  // signInPermission gate has already closed.
+  test("cannot widen past signInPermission", () => {
+    const schema = buildSigninSchema({
+      client: {
+        id: "c1",
+        name: "Acme",
+        signInPermission: "whitelist",
+        signInMethods: {
+          password: true,
+          passkey: true,
+          social: { github: true, google: true, apple: true },
+        },
+      },
+      identityProviders: providers,
+    });
+
+    expect(schema.supportedMethods).toEqual([]);
+    expect(schema.identityProviders).toEqual([]);
   });
 });

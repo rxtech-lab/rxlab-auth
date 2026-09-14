@@ -4,6 +4,11 @@ import {
   passwordSchema,
   displayNameSchema,
 } from "@/lib/validations/auth";
+import {
+  DEFAULT_SIGN_IN_METHODS,
+  filterSocialProviders,
+  type ClientSignInMethods,
+} from "@/lib/auth/sign-in-methods";
 
 export type Flow = "signin" | "signup";
 
@@ -35,7 +40,7 @@ export interface UiMethod {
   primary: boolean;
 }
 
-export type IdentityProviderId = "github" | "google";
+export type IdentityProviderId = "github" | "google" | "apple";
 
 export interface UiIdentityProvider {
   id: IdentityProviderId;
@@ -67,6 +72,8 @@ export interface OAuthClientLite {
   id: string;
   name: string;
   signInPermission: "all" | "none" | "whitelist";
+  /** Omitted means "every method allowed" — see lib/auth/sign-in-methods.ts. */
+  signInMethods?: ClientSignInMethods;
 }
 
 // Derive { minLength, maxLength, pattern } from a Zod string schema using the
@@ -142,20 +149,27 @@ export interface BuildSigninInput {
 
 export function buildSigninSchema(input: BuildSigninInput): UiSchema {
   const { client, identityProviders = [] } = input;
-  const passwordAllowed = client?.signInPermission === "all";
+  const clientOpen = client?.signInPermission === "all";
+  const allowed = client?.signInMethods ?? DEFAULT_SIGN_IN_METHODS;
 
   const methods: UiMethod[] = [];
-  if (passwordAllowed) {
-    methods.push({
-      id: "password",
-      label: "Sign in with password",
-      primary: true,
-    });
-    methods.push({
-      id: "passkey",
-      label: "Sign in with passkey",
-      primary: false,
-    });
+  if (clientOpen) {
+    if (allowed.password) {
+      methods.push({
+        id: "password",
+        label: "Sign in with password",
+        primary: true,
+      });
+    }
+    if (allowed.passkey) {
+      methods.push({
+        id: "passkey",
+        label: "Sign in with passkey",
+        // Promote to primary when password is switched off, so a passkey-only
+        // client still has a primary action to render.
+        primary: !allowed.password,
+      });
+    }
   }
 
   const title = client?.name
@@ -168,8 +182,8 @@ export function buildSigninSchema(input: BuildSigninInput): UiSchema {
     submitLabel: "Sign in",
     fields: [emailField(), passwordField({ autocomplete: "current-password" })],
     supportedMethods: methods,
-    identityProviders: passwordAllowed
-      ? identityProviders.map((provider) => ({
+    identityProviders: clientOpen
+      ? filterSocialProviders(identityProviders, allowed).map((provider) => ({
           ...provider,
           authorizationParameters: { identity_provider: provider.id },
         }))
@@ -206,30 +220,35 @@ export function buildSignupSchema(input: BuildSignupInput): UiSchema {
     identityProviders = [],
   } = input;
   const firstParty = client?.signInPermission === "all";
+  const allowed = client?.signInMethods ?? DEFAULT_SIGN_IN_METHODS;
 
   const methods: UiMethod[] = [];
   if (firstParty && signUpAllowed) {
-    methods.push({
-      id: "password",
-      label: "Sign up with password",
-      primary: true,
-    });
+    if (allowed.password) {
+      methods.push({
+        id: "password",
+        label: "Sign up with password",
+        primary: true,
+      });
+    }
     // The Apple system-sheet flow (passkey_account_creation) supersedes the
     // legacy `passkey` signup button — the latter required us to collect an
     // email field up front, while the OS sheet collects it itself. When the
     // new flow is on, only emit the system-sheet method.
-    if (accountCreationEnabled) {
-      methods.push({
-        id: "passkey_account_creation",
-        label: "Sign up with Passkey",
-        primary: false,
-      });
-    } else {
-      methods.push({
-        id: "passkey",
-        label: "Sign up with passkey",
-        primary: false,
-      });
+    if (allowed.passkey) {
+      methods.push(
+        accountCreationEnabled
+          ? {
+              id: "passkey_account_creation",
+              label: "Sign up with Passkey",
+              primary: !allowed.password,
+            }
+          : {
+              id: "passkey",
+              label: "Sign up with passkey",
+              primary: !allowed.password,
+            },
+      );
     }
   }
 
@@ -251,7 +270,7 @@ export function buildSignupSchema(input: BuildSignupInput): UiSchema {
       { id: "switch-to-signin", label: "Already have an account?", href: "/login" },
     ],
     identityProviders: firstParty && signUpAllowed
-      ? identityProviders.map((provider) => ({
+      ? filterSocialProviders(identityProviders, allowed).map((provider) => ({
           ...provider,
           authorizationParameters: { identity_provider: provider.id },
         }))

@@ -16,6 +16,12 @@ import { socialSigninErrorMessage } from "@/lib/auth/social/errors";
 
 interface LoginFormProps {
   socialProviders?: SocialProviderDescriptor[];
+  /**
+   * Per-client gating from the page. Presentational only — see the comment in
+   * app/(auth)/login/page.tsx for where this is actually enforced.
+   */
+  passwordEnabled?: boolean;
+  passkeyEnabled?: boolean;
 }
 
 function SocialProviderIcon({
@@ -23,7 +29,10 @@ function SocialProviderIcon({
 }: {
   provider: SocialProviderDescriptor;
 }) {
-  if (provider.id === "google") {
+  // A provider whose light and dark marks are the same file is full-colour
+  // (Google) and needs no theme swap; the monochrome marks (GitHub, Apple) ship
+  // as a black/white pair and cross-fade with the theme.
+  if (provider.iconPath === provider.darkIconPath) {
     return (
       <Image
         src={provider.iconPath}
@@ -55,7 +64,11 @@ function SocialProviderIcon({
   );
 }
 
-export function LoginForm({ socialProviders = [] }: LoginFormProps) {
+export function LoginForm({
+  socialProviders = [],
+  passwordEnabled = true,
+  passkeyEnabled = true,
+}: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/account";
@@ -137,6 +150,7 @@ export function LoginForm({ socialProviders = [] }: LoginFormProps) {
         </motion.div>
       )}
 
+      {passwordEnabled && (
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -183,7 +197,9 @@ export function LoginForm({ socialProviders = [] }: LoginFormProps) {
           )}
         </Button>
       </form>
+      )}
 
+      {passwordEnabled && (socialProviders.length > 0 || passkeyEnabled) && (
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
@@ -194,6 +210,7 @@ export function LoginForm({ socialProviders = [] }: LoginFormProps) {
           </span>
         </div>
       </div>
+      )}
 
       <div className="space-y-3">
         {socialProviders.map((provider) => {
@@ -214,6 +231,7 @@ export function LoginForm({ socialProviders = [] }: LoginFormProps) {
           );
         })}
 
+        {passkeyEnabled && (
         <Button
           type="button"
           variant="outline"
@@ -233,6 +251,7 @@ export function LoginForm({ socialProviders = [] }: LoginFormProps) {
             </>
           )}
         </Button>
+        )}
       </div>
 
       <p className="text-center text-sm text-muted-foreground">

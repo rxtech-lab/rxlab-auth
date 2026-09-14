@@ -24,16 +24,26 @@ interface SocialSigninConfirmationCardProps {
   profile: SocialProfile;
 }
 
+// `hasDarkVariant` marks the monochrome marks (GitHub, Apple) that need a
+// light/dark swap. Google's is full-colour and renders the same in both.
 const PROVIDERS = {
   github: {
     name: "GitHub",
     iconPath: "/brand/github-invertocat-black.svg",
     darkIconPath: "/brand/github-invertocat-white.svg",
+    hasDarkVariant: true,
   },
   google: {
     name: "Google",
     iconPath: "/brand/google-g.svg",
     darkIconPath: "/brand/google-g.svg",
+    hasDarkVariant: false,
+  },
+  apple: {
+    name: "Apple",
+    iconPath: "/brand/apple-logo-black.svg",
+    darkIconPath: "/brand/apple-logo-white.svg",
+    hasDarkVariant: true,
   },
 } as const;
 
@@ -86,12 +96,10 @@ export function SocialSigninConfirmationCard({
               width={36}
               height={36}
               className={
-                profile.provider === "github"
-                  ? "size-9 dark:hidden"
-                  : "size-9"
+                provider.hasDarkVariant ? "size-9 dark:hidden" : "size-9"
               }
             />
-            {profile.provider === "github" && (
+            {provider.hasDarkVariant && (
               <Image
                 src={provider.darkIconPath}
                 alt=""

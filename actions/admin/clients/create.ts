@@ -5,6 +5,7 @@ import { oauthClients } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
 import { hashPassword } from "@/lib/auth/password";
 import { createOAuthClientSchema, type CreateOAuthClientInput } from "@/lib/validations/admin";
+import { serializeSignInMethods } from "@/lib/auth/sign-in-methods";
 import { redirect } from "next/navigation";
 
 export interface CreateClientResult {
@@ -28,7 +29,7 @@ export async function createOAuthClient(
       };
     }
 
-    const { name, description, redirectUris, allowedScopes, isFirstParty, clientType, signInPermission } = parsed.data;
+    const { name, description, redirectUris, allowedScopes, isFirstParty, clientType, signInPermission, signInMethods } = parsed.data;
 
     // Generate client ID
     const clientId = `client_${crypto.randomUUID().replace(/-/g, "")}`;
@@ -54,6 +55,9 @@ export async function createOAuthClient(
       allowedScopes: JSON.stringify(allowedScopes),
       isFirstParty: isFirstParty || false,
       signInPermission: signInPermission || "all",
+      // null keeps the "everything allowed" default rather than freezing the
+      // provider list as it stands today.
+      signInMethods: signInMethods ? serializeSignInMethods(signInMethods) : null,
       createdAt: now,
       updatedAt: now,
     });

@@ -1,10 +1,7 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { deleteImage } from "@/lib/blob";
-import { eq } from "drizzle-orm";
+import { hardDeleteAccount } from "@/lib/account/deletion-scheduler";
 import { revalidatePath } from "next/cache";
 
 export interface DeleteUserResult {
@@ -12,41 +9,32 @@ export interface DeleteUserResult {
   error?: string;
 }
 
+/**
+ * Immediate, irreversible delete. Kept alongside the 7-day scheduled path for
+ * cases where an admin needs an account gone now (abuse, legal request).
+ *
+ * Safe against a user who already had a deletion pending: hardDeleteAccount
+ * cancels the orphaned workflow run, and even if that cancel fails the run wakes
+ * to a missing row and no-ops.
+ */
 export async function deleteUser(userId: string): Promise<DeleteUserResult> {
   try {
     await requireAdmin();
 
     if (!userId) {
-      return {
-        success: false,
-        error: "User ID is required",
-      };
+      return { success: false, error: "User ID is required" };
     }
 
-    // Get user to check for avatar
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    // Delete avatar from blob storage if exists
-    if (user?.avatarUrl) {
-      try {
-        await deleteImage(user.avatarUrl);
-      } catch {
-        // Ignore deletion errors for blob cleanup
-      }
+    const result = await hardDeleteAccount({ userId, actor: "admin" });
+    if (!result.ok) {
+      return { success: false, error: "User not found" };
     }
-
-    await db.delete(users).where(eq(users.id, userId));
 
     revalidatePath("/admin/dashboard/users");
 
     return { success: true };
   } catch (error) {
     console.error("Delete user error:", error);
-    return {
-      success: false,
-      error: "Failed to delete user",
-    };
+    return { success: false, error: "Failed to delete user" };
   }
 }

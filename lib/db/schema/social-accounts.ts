@@ -14,7 +14,7 @@ export const socialAccounts = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    provider: text("provider", { enum: ["github", "google"] }).notNull(),
+    provider: text("provider", { enum: ["github", "google", "apple"] }).notNull(),
     providerAccountId: text("provider_account_id").notNull(),
     providerEmail: text("provider_email").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),

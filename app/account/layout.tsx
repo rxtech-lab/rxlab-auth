@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Image from "next/image";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
@@ -49,7 +48,10 @@ export default async function AccountLayout({
   });
 
   if (!user) {
-    redirect("/login");
+    // The session outlived the account (a scheduled deletion fired, or an admin
+    // removed it). Go through the logout route so the stale cookie is cleared —
+    // redirecting straight to /login would bounce off proxy.ts and loop.
+    redirect("/api/auth/logout");
   }
 
   const headerRight = (
@@ -57,13 +59,16 @@ export default async function AccountLayout({
     <ThemeToggle />
     <DropdownMenu>
       <DropdownMenuTrigger className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        <Image
+        {/* Plain <img>: this was already `unoptimized`, so next/image bought
+            nothing, and a social avatar's host (googleusercontent,
+            githubusercontent, …) would have to be in remotePatterns to render
+            at all. */}
+        <img
           src={user.avatarUrl || `/api/avatar/${user.avatarSeed || user.id}`}
           alt="Avatar"
           width={32}
           height={32}
           className="rounded-full cursor-pointer object-cover w-8 h-8"
-          unoptimized
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

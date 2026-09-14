@@ -76,7 +76,20 @@ describe("pending social sign-in", () => {
       redirectTo: "/account",
     });
 
-    const modified = `${token.slice(0, -1)}${token.endsWith("a") ? "b" : "a"}`;
-    await expect(verifyPendingSocialSignin(modified)).rejects.toThrow();
+    // Tamper with the payload rather than the signature's last character: the
+    // final base64url character carries unused bits, so flipping it sometimes
+    // decodes to the very same signature bytes and the token still verifies.
+    // Any payload edit invalidates the signature deterministically.
+    const [header, payload, signature] = token.split(".");
+    const tamperedPayload = Buffer.from(
+      JSON.stringify({
+        ...JSON.parse(Buffer.from(payload, "base64url").toString()),
+        redirectTo: "/somewhere-else",
+      }),
+    ).toString("base64url");
+
+    await expect(
+      verifyPendingSocialSignin(`${header}.${tamperedPayload}.${signature}`),
+    ).rejects.toThrow();
   });
 });

@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth/session";
 import { ProfileForm } from "@/components/account/profile-form";
 import { SocialAccountCard } from "@/components/account/social-account-card";
 import { PasskeySetupPrompt } from "@/components/account/passkey-setup-prompt";
+import { PendingDeletionBanner } from "@/components/account/pending-deletion-banner";
 import { PageHeader } from "@/components/dashboard";
 import { Card, CardContent } from "@/components/ui/card";
 import { eq } from "drizzle-orm";
@@ -56,6 +57,12 @@ export default async function AccountPage({
         title="Profile"
         description="Manage your account information"
       />
+
+      {user.deletionScheduledAt && (
+        <PendingDeletionBanner
+          deletionScheduledAt={user.deletionScheduledAt.toISOString()}
+        />
+      )}
 
       <Card>
         <CardContent className="pt-6">

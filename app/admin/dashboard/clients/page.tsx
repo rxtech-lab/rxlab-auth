@@ -4,30 +4,22 @@ import { db } from "@/lib/db";
 import { oauthClients } from "@/lib/db/schema";
 import { desc, sql } from "drizzle-orm";
 import { ClientCard } from "@/components/admin/client-card";
+import { PaginationControls } from "@/components/admin/pagination-controls";
 import { PageHeader } from "@/components/dashboard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import {
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
+  buildQueryString,
+  parsePageParam,
+  parsePageSizeParam,
+  resolvePagination,
+} from "@/lib/admin/pagination";
 
 export const metadata = {
   title: "OAuth Clients - Admin",
   description: "Manage OAuth client applications",
 };
-
-const DEFAULT_PAGE_SIZE = 20;
-
-function buildPageUrl(page: number, pageSize: number) {
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  params.set("pageSize", String(pageSize));
-  return `?${params.toString()}`;
-}
 
 export default async function ClientsPage({
   searchParams,
@@ -35,34 +27,34 @@ export default async function ClientsPage({
   searchParams: Promise<{ page?: string; pageSize?: string }>;
 }) {
   const params = await searchParams;
-  const requestedPage = Math.max(parseInt(params.page ?? "1", 10) || 1, 1);
-  const pageSize = Math.min(
-    Math.max(parseInt(params.pageSize ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE, 1),
-    100
-  );
+  const requestedPage = parsePageParam(params.page);
+  const pageSize = parsePageSizeParam(params.pageSize);
 
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(oauthClients);
 
-  const totalPages = Math.max(Math.ceil(count / pageSize), 1);
-  const page = Math.min(requestedPage, totalPages);
+  const pagination = resolvePagination({
+    totalCount: count,
+    requestedPage,
+    pageSize,
+  });
 
-  if (page !== requestedPage) {
-    redirect(`/admin/dashboard/clients${buildPageUrl(page, pageSize)}`);
+  const hrefForPage = (page: number) =>
+    `/admin/dashboard/clients${buildQueryString({ page, pageSize })}`;
+
+  // A page past the end would otherwise render an empty list at a URL the user
+  // could bookmark; send them to the last real page instead.
+  if (pagination.wasClamped) {
+    redirect(hrefForPage(pagination.page));
   }
-
-  const offset = (page - 1) * pageSize;
 
   const clients = await db
     .select()
     .from(oauthClients)
     .orderBy(desc(oauthClients.createdAt))
-    .limit(pageSize)
-    .offset(offset);
-
-  const hasPrev = page > 1;
-  const hasNext = page < totalPages;
+    .limit(pagination.pageSize)
+    .offset(pagination.offset);
 
   return (
     <div className="space-y-6">
@@ -106,91 +98,11 @@ export default async function ClientsPage({
                   ))}
                 </div>
 
-                {totalPages > 1 && (
-                  <div
-                    className="flex items-center justify-between pt-4"
-                    data-testid="pagination-controls"
-                  >
-                    <div className="text-sm text-muted-foreground">
-                      Showing {(page - 1) * pageSize + 1}–
-                      {Math.min(page * pageSize, count)} of {count} clients
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Link
-                        href={buildPageUrl(1, pageSize)}
-                        aria-disabled={!hasPrev}
-                        tabIndex={hasPrev ? 0 : -1}
-                        className={!hasPrev ? "pointer-events-none" : ""}
-                      >
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={!hasPrev}
-                          data-testid="first-page"
-                        >
-                          <ChevronsLeft className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Link
-                        href={buildPageUrl(page - 1, pageSize)}
-                        aria-disabled={!hasPrev}
-                        tabIndex={hasPrev ? 0 : -1}
-                        className={!hasPrev ? "pointer-events-none" : ""}
-                      >
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={!hasPrev}
-                          data-testid="prev-page"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <span
-                        className="px-3 text-sm text-muted-foreground"
-                        data-testid="page-info"
-                      >
-                        Page {page} of {totalPages}
-                      </span>
-                      <Link
-                        href={buildPageUrl(page + 1, pageSize)}
-                        aria-disabled={!hasNext}
-                        tabIndex={hasNext ? 0 : -1}
-                        className={!hasNext ? "pointer-events-none" : ""}
-                      >
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={!hasNext}
-                          data-testid="next-page"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Link
-                        href={buildPageUrl(totalPages, pageSize)}
-                        aria-disabled={!hasNext}
-                        tabIndex={hasNext ? 0 : -1}
-                        className={!hasNext ? "pointer-events-none" : ""}
-                      >
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={!hasNext}
-                          data-testid="last-page"
-                        >
-                          <ChevronsRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                )}
-
-                {totalPages <= 1 && (
-                  <div className="text-center text-sm text-muted-foreground">
-                    Showing {count} {count === 1 ? "client" : "clients"}
-                  </div>
-                )}
+                <PaginationControls
+                  pagination={pagination}
+                  hrefForPage={hrefForPage}
+                  itemLabel="client"
+                />
               </>
             )}
           </div>

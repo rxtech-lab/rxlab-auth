@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireSignInMethod } from "@/lib/oauth/native-client";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
@@ -76,6 +77,10 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  // Native sign-up creates a password account, so it follows the password gate.
+  const passwordDisabled = requireSignInMethod(client, "password");
+  if (passwordDisabled) return passwordDisabled;
 
   // Scope validation (against client's allowed_scopes).
   const allowedScopes: string[] = JSON.parse(client.allowedScopes);

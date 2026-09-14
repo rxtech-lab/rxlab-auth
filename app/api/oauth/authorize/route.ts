@@ -10,6 +10,10 @@ import {
   validateScopes,
 } from "@/lib/validations/oauth";
 import { matchRedirectUri } from "@/lib/oauth/redirect-uri";
+import {
+  isSocialProviderEnabled,
+  parseSignInMethods,
+} from "@/lib/auth/sign-in-methods";
 import { eq, and } from "drizzle-orm";
 import {
   getSocialProvider,
@@ -92,6 +96,24 @@ export async function GET(request: NextRequest) {
 
   if (!client) {
     return errorResponse(request, "invalid_client", "Client not found", 400);
+  }
+
+  // The provider is configured server-wide (checked above); this is the
+  // per-client narrowing on top of that.
+  if (
+    identityProvider &&
+    isSocialProviderId(identityProvider) &&
+    !isSocialProviderEnabled(
+      parseSignInMethods(client.signInMethods),
+      identityProvider,
+    )
+  ) {
+    return errorResponse(
+      request,
+      "invalid_request",
+      "The requested identity provider is not available",
+      400,
+    );
   }
 
   // Validate redirect URI

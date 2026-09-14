@@ -31,6 +31,11 @@ export const oauthClients = sqliteTable(
       (): AnySQLiteColumn => oauthClientRoles.id,
       { onDelete: "set null" }
     ), // Explicit role assigned when this client creates a user
+    // Which sign-in methods this client may offer, as JSON:
+    //   { password: bool, passkey: bool, social: { github: bool, ... } }
+    // NULL means "every method is allowed", so existing rows need no backfill.
+    // Parsed through lib/auth/sign-in-methods.ts, which fails open.
+    signInMethods: text("sign_in_methods"),
     // Reserved for future permissions
     permissions: text("permissions"), // JSON object for future use
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),

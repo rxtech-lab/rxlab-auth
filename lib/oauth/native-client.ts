@@ -3,6 +3,13 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { oauthClients } from "@/lib/db/schema";
 import { matchRedirectUri } from "@/lib/oauth/redirect-uri";
+import {
+  isSignInMethodEnabled,
+  isSocialProviderEnabled,
+  parseSignInMethods,
+  type SignInMethodId,
+} from "@/lib/auth/sign-in-methods";
+import type { SocialProviderId } from "@/lib/auth/social/providers";
 
 type Client = typeof oauthClients.$inferSelect;
 
@@ -125,4 +132,43 @@ export function resolveRequestedScopes(
     };
   }
   return { ok: true, scopes: requestedScopes };
+}
+
+/**
+ * Per-client sign-in-method gate.
+ *
+ * Returns a response to short-circuit with when the client has switched this
+ * method off, or null when it is allowed. Layered *after* the signInPermission
+ * checks above — this narrows an already-permitted client, it never widens one.
+ */
+export function requireSignInMethod(
+  client: Client,
+  method: SignInMethodId,
+): NextResponse | null {
+  const methods = parseSignInMethods(client.signInMethods);
+  if (isSignInMethodEnabled(methods, method)) return null;
+
+  return NextResponse.json(
+    {
+      error: "unauthorized_client",
+      error_description: `The ${method} sign-in method is disabled for this client`,
+    },
+    { status: 400 },
+  );
+}
+
+export function requireSocialProvider(
+  client: Client,
+  provider: SocialProviderId,
+): NextResponse | null {
+  const methods = parseSignInMethods(client.signInMethods);
+  if (isSocialProviderEnabled(methods, provider)) return null;
+
+  return NextResponse.json(
+    {
+      error: "unauthorized_client",
+      error_description: `The ${provider} identity provider is disabled for this client`,
+    },
+    { status: 400 },
+  );
 }

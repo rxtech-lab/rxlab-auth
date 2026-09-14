@@ -2,8 +2,12 @@ import { desc, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { toContainsLikePattern } from "@/lib/admin-api/query";
+import {
+  buildAccountDeletionStatus,
+  type AccountDeletionStatus,
+} from "@/lib/account/deletion-status";
 
-export interface AdminUserSummary {
+export interface AdminUserSummary extends AccountDeletionStatus {
   id: string;
   sub: string;
   name: string | null;
@@ -17,6 +21,8 @@ interface AdminUserIdentityRow {
   displayName: string | null;
   avatarSeed: string | null;
   avatarUrl: string | null;
+  deletionScheduledAt: Date | null;
+  deletionRequestedAt: Date | null;
 }
 
 export interface AdminUserListResult {
@@ -36,6 +42,7 @@ export function buildAdminUserSummary(
   const issuer = issuerUrl?.replace(/\/$/, "");
 
   return {
+    ...buildAccountDeletionStatus(user),
     id: user.id,
     sub: user.id,
     name: user.displayName,
@@ -75,6 +82,8 @@ export async function listAdminUsers(params: {
       displayName: users.displayName,
       avatarSeed: users.avatarSeed,
       avatarUrl: users.avatarUrl,
+      deletionScheduledAt: users.deletionScheduledAt,
+      deletionRequestedAt: users.deletionRequestedAt,
     })
     .from(users);
   const filteredQuery = searchCondition

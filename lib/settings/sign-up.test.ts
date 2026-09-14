@@ -1,4 +1,5 @@
 import { describe, expect, test, mock, beforeEach } from "bun:test";
+import { drizzleOrmMock } from "@/lib/db/drizzle-mock";
 
 // Mock the database module
 const mockFindFirst = mock(() => Promise.resolve(null));
@@ -14,9 +15,7 @@ const mockDb = {
 };
 
 // Mock drizzle-orm eq function
-mock.module("drizzle-orm", () => ({
-  eq: (field: unknown, value: unknown) => ({ field, value }),
-}));
+mock.module("drizzle-orm", () => drizzleOrmMock);
 
 // Mock the db module
 mock.module("@/lib/db", () => ({

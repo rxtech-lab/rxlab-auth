@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireSignInMethod } from "@/lib/oauth/native-client";
 import { db } from "@/lib/db";
 import {
   oauthClients,
@@ -492,6 +493,10 @@ async function handlePasswordGrant(
       { status: 400 },
     );
   }
+
+  // ...and the client must not have switched password sign-in off for itself.
+  const passwordDisabled = requireSignInMethod(client, "password");
+  if (passwordDisabled) return passwordDisabled;
 
   // Resolve allowed scopes; default to client's allowed scopes when omitted
   const allowedScopes: string[] = JSON.parse(client.allowedScopes);

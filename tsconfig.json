@@ -20,6 +20,9 @@
     "plugins": [
       {
         "name": "next"
+      },
+      {
+        "name": "workflow"
       }
     ],
     "paths": {
@@ -40,7 +43,39 @@
     ".next/e2e-95161/types/**/*.ts",
     ".next/e2e-95161/dev/types/**/*.ts",
     ".next/e2e-95477/types/**/*.ts",
-    ".next/e2e-95477/dev/types/**/*.ts"
+    ".next/e2e-95477/dev/types/**/*.ts",
+    ".next/claude-verify/types/**/*.ts",
+    ".next/claude-verify/dev/types/**/*.ts",
+    ".next/e2e-63668/types/**/*.ts",
+    ".next/e2e-63668/dev/types/**/*.ts",
+    ".next/e2e-64085/types/**/*.ts",
+    ".next/e2e-64085/dev/types/**/*.ts",
+    ".next/e2e-64534/types/**/*.ts",
+    ".next/e2e-64534/dev/types/**/*.ts",
+    ".next/e2e-64598/types/**/*.ts",
+    ".next/e2e-64598/dev/types/**/*.ts",
+    ".next/e2e-65280/types/**/*.ts",
+    ".next/e2e-65280/dev/types/**/*.ts",
+    ".next/e2e-66170/types/**/*.ts",
+    ".next/e2e-66170/dev/types/**/*.ts",
+    ".next/e2e-66303/types/**/*.ts",
+    ".next/e2e-66303/dev/types/**/*.ts",
+    ".next/e2e-69630/types/**/*.ts",
+    ".next/e2e-69630/dev/types/**/*.ts",
+    ".next/e2e-70332/types/**/*.ts",
+    ".next/e2e-70332/dev/types/**/*.ts",
+    ".next/e2e-81274/types/**/*.ts",
+    ".next/e2e-81274/dev/types/**/*.ts",
+    ".next/e2e-89379/types/**/*.ts",
+    ".next/e2e-89379/dev/types/**/*.ts",
+    ".next/e2e-91806/types/**/*.ts",
+    ".next/e2e-91806/dev/types/**/*.ts",
+    ".next/e2e-94363/types/**/*.ts",
+    ".next/e2e-94363/dev/types/**/*.ts",
+    ".next/e2e-94943/types/**/*.ts",
+    ".next/e2e-94943/dev/types/**/*.ts",
+    ".next/e2e-96102/types/**/*.ts",
+    ".next/e2e-96102/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
