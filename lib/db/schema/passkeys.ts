@@ -1,7 +1,14 @@
-import { sqliteTable, text, integer, blob, index } from "drizzle-orm/sqlite-core";
+import {
+  pgTable,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  index,
+} from "drizzle-orm/pg-core";
 import { users } from "./users";
 
-export const passkeys = sqliteTable(
+export const passkeys = pgTable(
   "passkeys",
   {
     id: text("id").primaryKey(), // credential ID (base64url)
@@ -12,10 +19,10 @@ export const passkeys = sqliteTable(
     publicKey: text("public_key").notNull(), // base64url encoded COSE public key
     counter: integer("counter").notNull().default(0),
     deviceType: text("device_type"), // "platform" or "cross-platform"
-    backedUp: integer("backed_up", { mode: "boolean" }).default(false),
+    backedUp: boolean("backed_up").default(false),
     transports: text("transports"), // JSON array: ["internal", "usb", "ble", "nfc"]
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-    lastUsedAt: integer("last_used_at", { mode: "timestamp" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   },
   (table) => [index("passkeys_user_idx").on(table.userId)]
 );

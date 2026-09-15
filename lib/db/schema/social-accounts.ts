@@ -1,13 +1,13 @@
 import {
-  index,
-  integer,
-  sqliteTable,
+  pgTable,
   text,
+  timestamp,
+  index,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { users } from "./users";
 
-export const socialAccounts = sqliteTable(
+export const socialAccounts = pgTable(
   "social_accounts",
   {
     id: text("id").primaryKey(),
@@ -17,8 +17,8 @@ export const socialAccounts = sqliteTable(
     provider: text("provider", { enum: ["github", "google", "apple"] }).notNull(),
     providerAccountId: text("provider_account_id").notNull(),
     providerEmail: text("provider_email").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     uniqueIndex("social_accounts_provider_account_idx").on(

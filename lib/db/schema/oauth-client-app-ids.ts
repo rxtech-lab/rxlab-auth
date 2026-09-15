@@ -1,15 +1,15 @@
 import {
-  sqliteTable,
+  pgTable,
   text,
-  integer,
+  timestamp,
   index,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { oauthClients } from "./oauth-clients";
 
 // Apple app identifiers (`<TEAMID>.<BUNDLEID>`) registered to an OAuth client.
 // Read by the apple-app-site-association route to populate `webcredentials.apps`.
-export const oauthClientAppIds = sqliteTable(
+export const oauthClientAppIds = pgTable(
   "oauth_client_app_ids",
   {
     id: text("id").primaryKey(), // UUID
@@ -17,7 +17,7 @@ export const oauthClientAppIds = sqliteTable(
       .notNull()
       .references(() => oauthClients.id, { onDelete: "cascade" }),
     appId: text("app_id").notNull(), // <TEAMID>.<BUNDLEID>
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     uniqueIndex("oauth_client_app_ids_client_app_idx").on(

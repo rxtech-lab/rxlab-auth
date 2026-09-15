@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
-    "@libsql/client": "^0.17.0",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/server": "^13.2.2",
     "@simplewebauthn/types": "^12.0.0",
@@ -32,6 +31,7 @@
     "lucide-react": "^0.562.0",
     "next": "16.3.2",
     "next-themes": "^0.4.6",
+    "pg": "^8.23.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^6.7.0",
@@ -47,9 +47,11 @@
     "@tailwindcss/postcss": "^4",
     "@types/bun": "^1.4.0",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.8",
+    "embedded-postgres": "18.4.0-beta.17",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
     "tailwindcss": "^4",
@@ -61,6 +63,10 @@
   ],
   "trustedDependencies": [
     "sharp",
-    "unrs-resolver"
+    "unrs-resolver",
+    "@embedded-postgres/darwin-arm64",
+    "@embedded-postgres/darwin-x64",
+    "@embedded-postgres/linux-x64",
+    "@embedded-postgres/linux-arm64"
   ]
 }

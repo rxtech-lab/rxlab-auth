@@ -1,7 +1,7 @@
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
-export const emailVerificationTokens = sqliteTable(
+export const emailVerificationTokens = pgTable(
   "email_verification_tokens",
   {
     id: text("id").primaryKey(),
@@ -9,8 +9,8 @@ export const emailVerificationTokens = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     token: text("token").notNull().unique(),
-    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     index("email_verification_tokens_user_idx").on(table.userId),

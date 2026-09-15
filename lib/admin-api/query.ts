@@ -2,6 +2,11 @@ export const DEFAULT_ADMIN_API_PAGE_SIZE = 20;
 export const MAX_ADMIN_API_PAGE_SIZE = 100;
 export const MAX_ADMIN_API_KEYWORD_LENGTH = 100;
 
+/**
+ * Wraps a keyword for a substring `ILIKE`, escaping the wildcards it may
+ * contain. The escape character is a backslash, which is Postgres' default for
+ * `LIKE`/`ILIKE` — so callers need no explicit `ESCAPE` clause.
+ */
 export function toContainsLikePattern(keyword: string): string {
   return `%${keyword.replace(/[\\%_]/g, "\\$&")}%`;
 }

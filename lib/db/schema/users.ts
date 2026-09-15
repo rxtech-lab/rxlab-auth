@@ -1,11 +1,18 @@
-import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  pgTable,
+  text,
+  boolean,
+  timestamp,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
-export const users = sqliteTable(
+export const users = pgTable(
   "users",
   {
     id: text("id").primaryKey(), // UUID
     email: text("email").notNull().unique(),
-    emailVerified: integer("email_verified", { mode: "boolean" }).default(false),
+    emailVerified: boolean("email_verified").default(false),
     passwordHash: text("password_hash"), // nullable for passkey-only users
     username: text("username").unique(),
     displayName: text("display_name"),
@@ -16,17 +23,18 @@ export const users = sqliteTable(
     // them as one record. An account is pending deletion iff
     // `deletionScheduledAt` is non-null.
     //
-    // `deletionRequestId` is the fencing token the workflow checks on wake. It
-    // has to be an opaque id rather than a timestamp: `mode: "timestamp"` stores
-    // whole seconds, so a cancel + re-schedule inside the same second would
-    // produce an identical timestamp and let a stale run delete an account the
-    // user had re-scheduled. See lib/account/deletion.ts.
-    deletionScheduledAt: integer("deletion_scheduled_at", { mode: "timestamp" }),
-    deletionRequestedAt: integer("deletion_requested_at", { mode: "timestamp" }),
+    // `deletionRequestId` is the fencing token the workflow checks on wake. An
+    // opaque id rather than a timestamp comparison: identity is the thing the
+    // workflow actually cares about, so a cancel + re-schedule always produces
+    // a different token and a stale run can never delete an account the user
+    // had re-scheduled — no matter how close together the two requests land.
+    // See lib/account/deletion.ts.
+    deletionScheduledAt: timestamp("deletion_scheduled_at", { withTimezone: true }),
+    deletionRequestedAt: timestamp("deletion_requested_at", { withTimezone: true }),
     deletionRequestId: text("deletion_request_id"),
     deletionRunId: text("deletion_run_id"), // Vercel Workflow runId, null when unavailable
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     uniqueIndex("users_email_idx").on(table.email),

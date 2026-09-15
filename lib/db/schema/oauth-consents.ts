@@ -1,8 +1,14 @@
-import { sqliteTable, text, integer, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { oauthClients } from "./oauth-clients";
 
-export const oauthConsents = sqliteTable(
+export const oauthConsents = pgTable(
   "oauth_consents",
   {
     id: text("id").primaryKey(),
@@ -13,8 +19,8 @@ export const oauthConsents = sqliteTable(
       .notNull()
       .references(() => oauthClients.id, { onDelete: "cascade" }),
     scopes: text("scopes").notNull(), // JSON array of granted scopes
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     uniqueIndex("oauth_consents_user_client_idx").on(table.userId, table.clientId),

@@ -1,103 +1,12 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1768455168349,
-      "tag": "0000_friendly_madame_hydra",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1768886679225,
-      "tag": "0001_stale_thena",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1768888493219,
-      "tag": "0002_quick_wolf_cub",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1769649514081,
-      "tag": "0003_chilly_husk",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1769900000000,
-      "tag": "0004_dark_sentinel",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1772582400000,
-      "tag": "0005_easy_avatar",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1779778803950,
-      "tag": "0006_familiar_mandarin",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1783180400054,
-      "tag": "0007_app_scoped_roles",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1784352577495,
-      "tag": "0008_blushing_stellaris",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1786975129860,
-      "tag": "0009_serious_skin",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "6",
-      "when": 1787327178774,
-      "tag": "0010_session-auth-time",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "6",
-      "when": 1787559397940,
-      "tag": "0011_lame_exodus",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "6",
-      "when": 1789401315609,
-      "tag": "0012_parallel_hammerhead",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "6",
-      "when": 1789403221426,
-      "tag": "0013_pretty_bedlam",
+      "version": "7",
+      "when": 1789405848147,
+      "tag": "0000_certain_amphibian",
       "breakpoints": true
     }
   ]

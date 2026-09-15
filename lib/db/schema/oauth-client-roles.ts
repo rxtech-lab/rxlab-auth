@@ -1,14 +1,14 @@
 import {
-  sqliteTable,
+  pgTable,
   text,
-  integer,
+  timestamp,
   index,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { oauthClients } from "./oauth-clients";
 
-export const oauthClientRoles = sqliteTable(
+export const oauthClientRoles = pgTable(
   "oauth_client_roles",
   {
     id: text("id").primaryKey(), // UUID
@@ -17,8 +17,8 @@ export const oauthClientRoles = sqliteTable(
       .references(() => oauthClients.id, { onDelete: "cascade" }),
     key: text("key").notNull(),
     name: text("name").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     uniqueIndex("oauth_client_roles_client_key_idx").on(
@@ -29,7 +29,7 @@ export const oauthClientRoles = sqliteTable(
   ]
 );
 
-export const oauthClientUserRoles = sqliteTable(
+export const oauthClientUserRoles = pgTable(
   "oauth_client_user_roles",
   {
     id: text("id").primaryKey(), // UUID
@@ -42,7 +42,7 @@ export const oauthClientUserRoles = sqliteTable(
     roleId: text("role_id")
       .notNull()
       .references(() => oauthClientRoles.id, { onDelete: "cascade" }),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     uniqueIndex("oauth_client_user_roles_unique_idx").on(

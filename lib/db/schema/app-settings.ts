@@ -1,16 +1,12 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, boolean, timestamp } from "drizzle-orm/pg-core";
 
-export const appSettings = sqliteTable("app_settings", {
+export const appSettings = pgTable("app_settings", {
   id: text("id").primaryKey(), // Single row with id = "global"
-  signUpEnabled: integer("sign_up_enabled", { mode: "boolean" })
-    .default(true)
-    .notNull(),
-  signUpWhitelistEnabled: integer("sign_up_whitelist_enabled", {
-    mode: "boolean",
-  })
+  signUpEnabled: boolean("sign_up_enabled").default(true).notNull(),
+  signUpWhitelistEnabled: boolean("sign_up_whitelist_enabled")
     .default(false)
     .notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });
 
 export type AppSettings = typeof appSettings.$inferSelect;
