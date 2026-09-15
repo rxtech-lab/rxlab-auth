@@ -30,14 +30,14 @@ A modern, full-featured authentication system built with Next.js 16 and React 19
 
 - **Framework**: Next.js 16 with App Router
 - **UI**: React 19
-- **Database**: Drizzle ORM with libsql (Turso/SQLite)
+- **Database**: Drizzle ORM with Neon Postgres (node-postgres)
 - **Authentication**: SimpleWebAuthn, Iron Session, Jose (JWT)
 - **UI Components**: shadcn/ui with base-vega style, built on @base-ui/react
 - **Styling**: Tailwind CSS v4
 - **Email**: Resend
 - **Storage**: Vercel Blob
 - **Cache/Rate Limiting**: Upstash Redis
-- **Testing**: Playwright for E2E tests
+- **Testing**: Playwright for E2E tests (against an embedded Postgres cluster)
 - **Package Manager**: Bun
 
 ## Getting Started
@@ -45,7 +45,7 @@ A modern, full-featured authentication system built with Next.js 16 and React 19
 ### Prerequisites
 
 - [Bun](https://bun.sh) installed on your system
-- A Turso database (or compatible libsql database)
+- A Postgres database (Neon recommended)
 - Redis instance (Upstash recommended)
 - Resend API key for email functionality
 
@@ -55,8 +55,7 @@ Create a `.env.local` file in the root directory with the following variables:
 
 ```env
 # Database
-TURSO_DATABASE_URL=your_turso_database_url
-TURSO_AUTH_TOKEN=your_turso_auth_token
+DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
 
 # Application
 NEXT_PUBLIC_APP_NAME=RxLab Auth

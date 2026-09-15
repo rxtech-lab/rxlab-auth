@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { desc, lt, or, and, eq, sql, like } from "drizzle-orm";
+import { count, desc, lt, or, and, eq, ilike } from "drizzle-orm";
 import type { User } from "@/lib/db/schema";
 
 export interface PaginatedUsersResult {
@@ -58,21 +58,18 @@ export async function getUsers(
     // Build search condition
     const searchCondition = searchTerm
       ? or(
-          like(users.email, `%${searchTerm}%`),
-          like(users.username, `%${searchTerm}%`),
-          like(users.displayName, `%${searchTerm}%`)
+          ilike(users.email, `%${searchTerm}%`),
+          ilike(users.username, `%${searchTerm}%`),
+          ilike(users.displayName, `%${searchTerm}%`)
         )
       : undefined;
 
     // Get total count (with search filter if applicable)
     const countQuery = searchCondition
-      ? db
-          .select({ count: sql<number>`count(*)` })
-          .from(users)
-          .where(searchCondition)
-      : db.select({ count: sql<number>`count(*)` }).from(users);
+      ? db.select({ count: count() }).from(users).where(searchCondition)
+      : db.select({ count: count() }).from(users);
 
-    const [{ count }] = await countQuery;
+    const [{ count: totalCount }] = await countQuery;
 
     // Build cursor condition
     const cursorCondition = cursorData
@@ -122,7 +119,7 @@ export async function getUsers(
       data: {
         users: resultUsers,
         nextCursor,
-        totalCount: count,
+        totalCount,
       },
     };
   } catch (error) {

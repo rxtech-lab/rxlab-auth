@@ -37,7 +37,7 @@ This is a Next.js 16 authentication app using the App Router with React 19.
 
 ### Tech Stack
 
-- **Database**: Drizzle ORM with libsql (SQLite)
+- **Database**: Drizzle ORM with Neon Postgres (node-postgres)
 - **UI Components**: shadcn/ui with base-vega style, built on @base-ui/react primitives
 - **Styling**: Tailwind CSS v4 with CSS variables for theming
 

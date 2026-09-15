@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { oauthClients, oauthClientRoles, users } from "@/lib/db/schema";
-import { asc, desc, like, or, sql } from "drizzle-orm";
+import { asc, count, desc, ilike, or } from "drizzle-orm";
 import { PageHeader } from "@/components/dashboard";
 import { UserList } from "@/components/admin/user-list";
 import type { UserRoleOptionApp } from "@/components/admin/user-role-assignments";
@@ -32,19 +32,19 @@ export default async function UsersPage({
   // to a specific search result.
   const searchCondition = search
     ? or(
-        like(users.email, `%${search}%`),
-        like(users.username, `%${search}%`),
-        like(users.displayName, `%${search}%`),
+        ilike(users.email, `%${search}%`),
+        ilike(users.username, `%${search}%`),
+        ilike(users.displayName, `%${search}%`),
       )
     : undefined;
 
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
+  const [{ count: filteredCount }] = await db
+    .select({ count: count() })
     .from(users)
     .where(searchCondition);
 
   const pagination = resolvePagination({
-    totalCount: count,
+    totalCount: filteredCount,
     requestedPage,
     pageSize: PAGE_SIZE,
   });
@@ -104,8 +104,8 @@ export default async function UsersPage({
   // The count in the header is the unfiltered total; the filtered count belongs
   // with the rows it describes.
   const [{ count: totalUsers }] = search
-    ? await db.select({ count: sql<number>`count(*)` }).from(users)
-    : [{ count }];
+    ? await db.select({ count: count() }).from(users)
+    : [{ count: filteredCount }];
 
   return (
     <div className="space-y-6">

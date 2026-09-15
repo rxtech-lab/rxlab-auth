@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { oauthClients } from "@/lib/db/schema";
-import { desc, sql } from "drizzle-orm";
+import { count, desc } from "drizzle-orm";
 import { ClientCard } from "@/components/admin/client-card";
 import { PaginationControls } from "@/components/admin/pagination-controls";
 import { PageHeader } from "@/components/dashboard";
@@ -30,12 +30,12 @@ export default async function ClientsPage({
   const requestedPage = parsePageParam(params.page);
   const pageSize = parsePageSizeParam(params.pageSize);
 
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
+  const [{ count: totalCount }] = await db
+    .select({ count: count() })
     .from(oauthClients);
 
   const pagination = resolvePagination({
-    totalCount: count,
+    totalCount,
     requestedPage,
     pageSize,
   });

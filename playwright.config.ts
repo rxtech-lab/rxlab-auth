@@ -1,15 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 
-// Next.js can evaluate server actions and route handlers in separate module
-// contexts, which makes file::memory: databases diverge during cross-route
-// E2E flows. A unique file per Playwright run keeps every context on the same
-// database without leaking state between runs.
-const e2eDatabaseUrl = `file:${join(
-  tmpdir(),
-  `rxlab-auth-e2e-${process.pid}-${Date.now()}.sqlite`,
-)}`;
 function readE2EPort(name: string, fallback: number): number {
   const port = Number(process.env[name] ?? fallback);
   if (!Number.isInteger(port) || port < 1 || port > 65_535) {
@@ -21,6 +11,13 @@ function readE2EPort(name: string, fallback: number): number {
 const configuredE2EAppPort = readE2EPort("E2E_APP_PORT", 3000);
 const e2eBaseUrl = `http://localhost:${configuredE2EAppPort}`;
 const e2eDistDir = `.next/e2e-${process.pid}`;
+
+// The cluster itself is booted by e2e/global-setup.ts, which runs after this
+// module is evaluated. The URL has to be decided here so it can be baked into
+// `webServer.env` below; global setup picks it back up off process.env.
+const e2ePostgresPort = readE2EPort("E2E_PG_PORT", 55432);
+const e2eDatabaseUrl = `postgresql://postgres:postgres@localhost:${e2ePostgresPort}/rxlab_auth_e2e`;
+process.env.E2E_DATABASE_URL = e2eDatabaseUrl;
 
 // Test JWT keys for E2E testing (valid RSA key pair)
 const testPrivateKey = `-----BEGIN PRIVATE KEY-----
@@ -64,10 +61,12 @@ ewIDAQAB
 
 export default defineConfig({
   testDir: "./e2e",
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 2,
-  // Use 1 worker for in-memory SQLite (each worker gets separate DB)
+  // One worker: the specs share a single database and do not clean up after
+  // themselves, so overlapping runs would see each other's rows.
   workers: 1,
   reporter: "html",
   timeout: 30000, // 30 seconds per test
@@ -111,9 +110,8 @@ export default defineConfig({
         NEXT_PUBLIC_E2E_SKIP_EMAIL_VERIFICATION: "true",
         NEXT_DIST_DIR: e2eDistDir,
 
-        // Database (unique file-backed SQLite database for this E2E run)
-        TURSO_DATABASE_URL: e2eDatabaseUrl,
-        TURSO_AUTH_TOKEN: "",
+        // Database (throwaway embedded Postgres cluster for this E2E run)
+        DATABASE_URL: e2eDatabaseUrl,
 
         // Session
         SESSION_SECRET: "e2e-test-session-secret-minimum-32-characters",

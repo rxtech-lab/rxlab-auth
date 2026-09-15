@@ -1,14 +1,15 @@
 import {
-  sqliteTable,
+  pgTable,
   text,
-  integer,
+  boolean,
+  timestamp,
   index,
   uniqueIndex,
-  type AnySQLiteColumn,
-} from "drizzle-orm/sqlite-core";
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
 import { oauthClientRoles } from "./oauth-client-roles";
 
-export const oauthClients = sqliteTable(
+export const oauthClients = pgTable(
   "oauth_clients",
   {
     id: text("id").primaryKey(), // client_id
@@ -21,14 +22,14 @@ export const oauthClients = sqliteTable(
     iconUrl: text("icon_url"), // Vercel Blob URL
     redirectUris: text("redirect_uris").notNull(), // JSON array
     allowedScopes: text("allowed_scopes").notNull(), // JSON array
-    isFirstParty: integer("is_first_party", { mode: "boolean" }).default(false),
+    isFirstParty: boolean("is_first_party").default(false),
     signInPermission: text("sign_in_permission", {
       enum: ["all", "none", "whitelist"],
     })
       .notNull()
       .default("all"), // Controls who can sign in via this client
     defaultRoleId: text("default_role_id").references(
-      (): AnySQLiteColumn => oauthClientRoles.id,
+      (): AnyPgColumn => oauthClientRoles.id,
       { onDelete: "set null" }
     ), // Explicit role assigned when this client creates a user
     // Which sign-in methods this client may offer, as JSON:
@@ -38,13 +39,13 @@ export const oauthClients = sqliteTable(
     signInMethods: text("sign_in_methods"),
     // Reserved for future permissions
     permissions: text("permissions"), // JSON object for future use
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [index("oauth_clients_name_idx").on(table.name)]
 );
 
-export const oauthClientEmailWhitelist = sqliteTable(
+export const oauthClientEmailWhitelist = pgTable(
   "oauth_client_email_whitelist",
   {
     id: text("id").primaryKey(), // UUID
@@ -52,7 +53,7 @@ export const oauthClientEmailWhitelist = sqliteTable(
       .notNull()
       .references(() => oauthClients.id, { onDelete: "cascade" }),
     email: text("email").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     uniqueIndex("oauth_client_email_whitelist_client_email_idx").on(

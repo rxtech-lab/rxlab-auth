@@ -1,11 +1,11 @@
-import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
-export const emailWhitelist = sqliteTable(
+export const emailWhitelist = pgTable(
   "email_whitelist",
   {
     id: text("id").primaryKey(), // UUID
     email: text("email").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [uniqueIndex("email_whitelist_email_idx").on(table.email)]
 );

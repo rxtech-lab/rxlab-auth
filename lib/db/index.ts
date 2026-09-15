@@ -1,53 +1,39 @@
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient, Client } from "@libsql/client";
-import { migrate } from "drizzle-orm/libsql/migrator";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import * as schema from "./schema";
-import path from "path";
 
-// Persist database client across HMR for in-memory databases
+// Persist the pool across HMR so a dev session does not leak a connection pool
+// per module reload.
 const globalForDb = globalThis as unknown as {
-  client: Client | undefined;
-  initialized: boolean | undefined;
+  pool: Pool | undefined;
 };
 
-const client =
-  globalForDb.client ??
-  createClient({
-    url: process.env.TURSO_DATABASE_URL!,
-    authToken: process.env.TURSO_AUTH_TOKEN,
-  });
+// `pg` would otherwise fall back to libpq's defaults (localhost, the OS user)
+// and fail later with a confusing "database does not exist", so a missing URL
+// is caught here where the cause is obvious.
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+const pool = globalForDb.pool ?? new Pool({ connectionString });
+
+// An idle pooled connection dropped by the server — Neon autosuspending, a
+// failover, the cluster going down at the end of an E2E run — surfaces as an
+// `error` event on the Pool. Node turns an unhandled one into an
+// uncaughtException that takes the process with it, so swallow it here: the
+// pool discards the dead client on its own and the next query gets a fresh one.
+pool.on("error", (error) => {
+  console.error("[db] idle client error", error);
+});
 
 // Recreate the Drizzle wrapper when this module reloads so newly added schema
-// exports are reflected in db.query while preserving the underlying client.
-export const db = drizzle(client, { schema });
+// exports are reflected in db.query while preserving the underlying pool.
+export const db = drizzle(pool, { schema });
 
 // Preserve across HMR in development
 if (process.env.NODE_ENV !== "production") {
-  globalForDb.client = client;
+  globalForDb.pool = pool;
 }
 
 export type Database = typeof db;
-
-// Auto-run migrations for isolated E2E databases.
-async function initializeDatabase() {
-  // Skip if already initialized
-  if (globalForDb.initialized) {
-    return;
-  }
-
-  if (
-    process.env.E2E_SKIP_EMAIL_VERIFICATION === "true" &&
-    process.env.TURSO_DATABASE_URL
-  ) {
-    // Use drizzle migrations for E2E testing.
-    const migrationsFolder = path.join(process.cwd(), "lib/db/migrations");
-
-    await migrate(db, { migrationsFolder });
-
-    globalForDb.initialized = true;
-    console.log("[E2E] Database migrations applied");
-  }
-}
-
-// Initialize on module load
-initializeDatabase().catch(console.error);

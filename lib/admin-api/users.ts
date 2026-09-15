@@ -1,4 +1,4 @@
-import { desc, or, sql } from "drizzle-orm";
+import { count, desc, ilike, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { toContainsLikePattern } from "@/lib/admin-api/query";
@@ -63,15 +63,15 @@ export async function listAdminUsers(params: {
   const keywordPattern = keyword ? toContainsLikePattern(keyword) : undefined;
   const searchCondition = keywordPattern
     ? or(
-        sql`${users.id} LIKE ${keywordPattern} ESCAPE '\\'`,
-        sql`${users.email} LIKE ${keywordPattern} ESCAPE '\\'`,
-        sql`${users.username} LIKE ${keywordPattern} ESCAPE '\\'`,
-        sql`${users.displayName} LIKE ${keywordPattern} ESCAPE '\\'`,
+        ilike(users.id, keywordPattern),
+        ilike(users.email, keywordPattern),
+        ilike(users.username, keywordPattern),
+        ilike(users.displayName, keywordPattern),
       )
     : undefined;
 
-  const countQuery = db.select({ count: sql<number>`count(*)` }).from(users);
-  const [{ count }] = searchCondition
+  const countQuery = db.select({ count: count() }).from(users);
+  const [{ count: totalCount }] = searchCondition
     ? await countQuery.where(searchCondition)
     : await countQuery;
 
@@ -101,8 +101,8 @@ export async function listAdminUsers(params: {
     pagination: {
       page,
       pageSize,
-      totalCount: count,
-      totalPages: Math.ceil(count / pageSize),
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize),
     },
   };
 }

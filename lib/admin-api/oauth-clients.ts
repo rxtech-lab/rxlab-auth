@@ -1,4 +1,4 @@
-import { and, desc, inArray, or, sql } from "drizzle-orm";
+import { and, count, desc, ilike, inArray, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { oauthClients } from "@/lib/db/schema";
 import type { ReadOAuthClientsAccess } from "@/lib/admin-api/permissions";
@@ -40,9 +40,9 @@ export async function listOAuthClients(params: {
       : undefined;
   const keywordCondition = keywordPattern
     ? or(
-        sql`${oauthClients.id} LIKE ${keywordPattern} ESCAPE '\\'`,
-        sql`${oauthClients.name} LIKE ${keywordPattern} ESCAPE '\\'`,
-        sql`${oauthClients.description} LIKE ${keywordPattern} ESCAPE '\\'`,
+        ilike(oauthClients.id, keywordPattern),
+        ilike(oauthClients.name, keywordPattern),
+        ilike(oauthClients.description, keywordPattern),
       )
     : undefined;
   const whereCondition =
@@ -50,10 +50,8 @@ export async function listOAuthClients(params: {
       ? and(accessCondition, keywordCondition)
       : accessCondition || keywordCondition;
 
-  const countQuery = db
-    .select({ count: sql<number>`count(*)` })
-    .from(oauthClients);
-  const [{ count }] = whereCondition
+  const countQuery = db.select({ count: count() }).from(oauthClients);
+  const [{ count: totalCount }] = whereCondition
     ? await countQuery.where(whereCondition)
     : await countQuery;
 
@@ -83,8 +81,8 @@ export async function listOAuthClients(params: {
     pagination: {
       page,
       pageSize,
-      totalCount: count,
-      totalPages: Math.ceil(count / pageSize),
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize),
     },
   };
 }
