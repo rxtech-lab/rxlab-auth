@@ -1,5 +1,6 @@
 import { describe, expect, test, mock, beforeEach } from "bun:test";
 import { drizzleOrmMock } from "@/lib/db/drizzle-mock";
+import { schemaMock } from "@/lib/db/schema-mock";
 
 // Mock the database module
 const mockFindFirst = mock(() => Promise.resolve(null));
@@ -26,6 +27,7 @@ mock.module("@/lib/db", () => ({
 
 // Mock the schema module
 mock.module("@/lib/db/schema", () => ({
+  ...schemaMock,
   users: { id: "id", email: "email", username: "username" },
 }));
 

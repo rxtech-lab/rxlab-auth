@@ -24,6 +24,8 @@ export const drizzleOrmMock = {
   not: (condition_: unknown) => ({ not: condition_ }),
 
   or: condition("or"),
+  count: condition("count"),
+  ilike: condition("ilike"),
   ne: condition("ne"),
   gt: condition("gt"),
   gte: condition("gte"),
